@@ -16,16 +16,20 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            /* FOND DE SECOURS : Un dégradé Sakura si les images buggent */
+            /* FOND DE DÉPART : Dégradé Sakura */
             background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
             font-family: 'Zen Maru Gothic', sans-serif;
+            user-select: none; /* Empêche la sélection de texte */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- ARRIÈRE-PLAN (SLIDESHOW) --- */
+        /* --- ARRIÈRE-PLAN (SLIDESHOW - Caché au début) --- */
         #bg-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            opacity: 0; /* On ne montre les photos qu'à la fin */
+            transition: opacity 2s ease-in-out;
         }
         .bg-slide {
             position: absolute;
@@ -37,12 +41,14 @@
         }
         .bg-slide.active { opacity: 1; }
 
-        /* Filtre blanc/rose pour adoucir les photos (effet romantique) */
+        /* Filtre sombre (Caché au début) */
         #overlay-filter {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 10, 20, 0.4); /* Légèrement teinté sombre pour lisibilité */
+            background: rgba(40, 10, 20, 0.5); 
             z-index: 1;
+            opacity: 0;
+            transition: opacity 2s;
         }
 
         /* --- CANVAS (PÉTALES) --- */
@@ -50,38 +56,55 @@
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2;
-            pointer-events: auto; /* Important pour capter le touch */
+            pointer-events: auto; 
         }
 
-        /* --- INSTRUCTION DE DÉPART --- */
-        #start-instruction {
+        /* --- CONTENEUR DES MESSAGES (Séquence) --- */
+        #story-container {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
             text-align: center;
             color: white;
-            pointer-events: none; /* Laisse passer le clic vers le canvas */
-            transition: opacity 1s;
+            width: 90%;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
         }
-        .hand-icon { font-size: 3rem; margin-bottom: 10px; display: block; animation: float 2s infinite ease-in-out; }
-        .tap-text { font-family: 'Great Vibes', cursive; font-size: 2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
 
-        @keyframes float { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-15px);} }
+        .big-icon { 
+            font-size: 5rem; 
+            margin-bottom: 20px; 
+            display: block; 
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
+            animation: float 3s infinite ease-in-out; 
+        }
+        
+        .story-text { 
+            font-family: 'Great Vibes', cursive; 
+            font-size: 2.2rem; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            color: #d6336c; /* Rose foncé pour être lisible sur le fond clair du début */
+            transition: color 2s;
+        }
 
-        /* --- CONTENU PRINCIPAL (Caché au début) --- */
-        #main-content {
+        /* Animation de flottement pour les icones */
+        @keyframes float { 0%, 100% {transform: translateY(0) scale(1);} 50% {transform: translateY(-15px) scale(1.1);} }
+
+        /* --- CONTENU FINAL (Timers - Caché au début) --- */
+        #final-content {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 5;
-            display: flex; /* CENTRAGE PARFAIT */
+            display: flex; 
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            opacity: 0; /* Invisible au départ */
-            transition: opacity 2.5s ease-out; /* Apparition lente */
+            opacity: 0; 
+            transition: opacity 2.5s ease-out; 
             pointer-events: none;
+            display: none; /* Retiré du flux au début */
         }
 
         h1 {
@@ -89,7 +112,7 @@
             font-size: 3.5rem;
             color: #fff0f5;
             margin: 0 0 10px 0;
-            text-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-shadow: 0 4px 6px rgba(0,0,0,0.5);
             line-height: 1.2;
         }
         
@@ -102,7 +125,6 @@
             padding: 0 20px;
         }
 
-        /* Glassmorphism amélioré */
         .glass-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -123,19 +145,17 @@
 </head>
 <body>
 
-    <div id="bg-container">
-        </div>
-    
+    <div id="bg-container"></div>
     <div id="overlay-filter"></div>
 
     <canvas id="canvas-sakura"></canvas>
 
-    <div id="start-instruction">
-        <span class="hand-icon">👆</span>
-        <span class="tap-text">Touche l'écran...</span>
+    <div id="story-container">
+        <span id="story-icon" class="big-icon">👆</span>
+        <span id="story-text" class="story-text">Touche l'écran...</span>
     </div>
 
-    <div id="main-content">
+    <div id="final-content">
         <h1>Joyeuse<br>Saint-Valentin</h1>
         <p class="subtitle">Pour mon âme soeur que j'aime tant</p>
 
@@ -152,25 +172,35 @@
 
     <script>
         // ==========================================
-        // CONFIGURATION (TES PHOTOS ICI)
+        // CONFIGURATION (PHOTOS)
         // ==========================================
-        // Remplace par tes noms de fichiers exacts (attention minuscules/majuscules !)
         const images = [
             'nous1.jpg', 
             '1000014222.jpg',
             '1000014295.jpg' 
         ];
 
-  
-        //rencontre en 2025 !
-        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); // 1er Juin (Mois 5 car Janvier = 0)
-        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); // 17 Juillet
+        // DATES (INCHANGÉES)
+        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); 
+        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
 
         // ==========================================
-        // 1. GESTION DU SLIDESHOW
+        // SCÉNARIO (Les phrases et icones)
+        // ==========================================
+        const scenario = [
+            { text: "Pour ma meilleure amie et partenaire", icon: "💐" }, // Bouquet
+            { text: "Pour celle qui me soutient et rend ma vie meilleure", icon: "🌟" }, // Etoile
+            { text: "Pour celle que je n'abandonnerai jamais", icon: "♾️" }, // Infini
+            { text: "Laisse moi te montrer à quel point je t'aime", icon: "💌" } // Lettre
+        ];
+        
+        let step = -1; // -1 = État initial "Touche l'écran"
+        let isAnimating = false; // Pour éviter de cliquer trop vite
+
+        // ==========================================
+        // SLIDESHOW
         // ==========================================
         const bgContainer = document.getElementById('bg-container');
-        
         if(images.length > 0) {
             images.forEach((img, i) => {
                 const el = document.createElement('div');
@@ -180,7 +210,6 @@
                 bgContainer.appendChild(el);
             });
         }
-
         let curSlide = 0;
         function rotateSlide() {
             const slides = document.querySelectorAll('.bg-slide');
@@ -193,13 +222,12 @@
         setInterval(rotateSlide, 5000);
 
         // ==========================================
-        // 2. TIMERS
+        // TIMERS LOGIC
         // ==========================================
         function getDuration(startDate) {
             const now = new Date();
             const diff = now - startDate;
-            if (diff < 0) return "Bientôt..."; // Sécurité si date future
-
+            if (diff < 0) return "Bientôt..."; 
             const days = Math.floor(diff / (86400000));
             const hours = Math.floor((diff % 86400000) / 3600000);
             const mins = Math.floor((diff % 3600000) / 60000);
@@ -209,17 +237,16 @@
             document.getElementById('timer-kiss').innerText = getDuration(dateKiss);
             document.getElementById('timer-official').innerText = getDuration(dateOfficial);
         }
-        setInterval(refreshTimers, 1000); // Mise à jour chaque seconde pour effet dynamique
+        setInterval(refreshTimers, 1000);
         refreshTimers();
 
         // ==========================================
-        // 3. MOTEUR SAKURA (CANVAS)
+        // CANVAS SAKURA
         // ==========================================
         const canvas = document.getElementById('canvas-sakura');
         const ctx = canvas.getContext('2d');
         let width, height;
         let petals = [];
-        let isStarted = false; // Pour savoir si elle a touché l'écran
 
         function resize() {
             width = canvas.width = window.innerWidth;
@@ -231,7 +258,7 @@
         class Petal {
             constructor() {
                 this.x = Math.random() * width;
-                this.y = Math.random() * height - height; // Commence au dessus
+                this.y = Math.random() * height - height; 
                 this.size = Math.random() * 10 + 5;
                 this.speedY = Math.random() * 1 + 0.5;
                 this.speedX = Math.random() * 2 - 1;
@@ -239,18 +266,10 @@
                 this.angle = Math.random() * 360;
                 this.spin = Math.random() * 2 - 1;
             }
-
             update() {
                 this.y += this.speedY;
-                this.x += Math.sin(this.angle * 0.01) + this.speedX; // Oscillation
+                this.x += Math.sin(this.angle * 0.01) + this.speedX; 
                 this.angle += this.spin;
-
-                // Si on a "activé" (touché), les pétales tombent un peu plus vite
-                if (isStarted) {
-                    this.speedY += 0.001; 
-                }
-
-                // Reset si sort de l'écran
                 if (this.y > height) {
                     this.y = -20;
                     this.x = Math.random() * width;
@@ -258,14 +277,11 @@
                 if (this.x > width) this.x = 0;
                 if (this.x < 0) this.x = width;
             }
-
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle * Math.PI / 180);
                 ctx.fillStyle = this.color;
-                
-                // Dessin d'un pétale (forme ovale simple)
                 ctx.beginPath();
                 ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
                 ctx.fill();
@@ -273,47 +289,82 @@
             }
         }
 
-        // Créer 100 pétales
         function initPetals() {
             petals = [];
-            for (let i = 0; i < 80; i++) {
-                petals.push(new Petal());
-            }
+            for (let i = 0; i < 80; i++) petals.push(new Petal());
         }
         initPetals();
 
         function animate() {
-            ctx.clearRect(0, 0, width, height); // On efface tout à chaque frame (pas de trainée cette fois, plus net)
-            
-            petals.forEach(p => {
-                p.update();
-                p.draw();
-            });
+            ctx.clearRect(0, 0, width, height);
+            petals.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(animate);
         }
         animate();
 
         // ==========================================
-        // 4. INTERACTION (Le moment magique)
+        // GESTION DE L'INTERACTION (LE CŒUR DU SYSTÈME)
         // ==========================================
-        function revealMagic() {
-            if (isStarted) return; // Déjà fait
-            isStarted = true;
+        
+        const storyContainer = document.getElementById('story-container');
+        const storyText = document.getElementById('story-text');
+        const storyIcon = document.getElementById('story-icon');
+        const finalContent = document.getElementById('final-content');
+        const overlayFilter = document.getElementById('overlay-filter');
 
-            // 1. Cacher l'instruction
-            document.getElementById('start-instruction').style.opacity = 0;
+        function handleTap() {
+            if(isAnimating) return; // Empêche de cliquer pendant la transition
+            isAnimating = true;
+
+            step++; // On avance d'une étape
+
+            // --- CAS 1 : ON DÉROULE L'HISTOIRE ---
+            if (step < scenario.length) {
+                // 1. Fade OUT
+                storyContainer.style.opacity = 0;
+
+                setTimeout(() => {
+                    // 2. Changement de texte et icone
+                    storyText.innerText = scenario[step].text;
+                    storyIcon.innerText = scenario[step].icon;
+                    
+                    // Petit effet de vent sur les pétales
+                    petals.forEach(p => { p.speedY += 1.5; });
+
+                    // 3. Fade IN
+                    storyContainer.style.opacity = 1;
+                    isAnimating = false;
+                }, 500); // Temps d'attente égal à la transition CSS
+            } 
             
-            // 2. Afficher le contenu doucement
-            document.getElementById('main-content').style.opacity = 1;
+            // --- CAS 2 : LE GRAND FINAL ---
+            else {
+                // 1. On cache l'histoire
+                storyContainer.style.opacity = 0;
+                
+                setTimeout(() => {
+                    storyContainer.style.display = 'none';
+                    
+                    // 2. On affiche le fond photo et le filtre
+                    bgContainer.style.opacity = 1;
+                    overlayFilter.style.opacity = 1;
 
-            // 3. Petit effet "vent" : on ajoute des pétales et on les agite
-            for(let i=0; i<30; i++) petals.push(new Petal());
-            petals.forEach(p => { p.speedY += 2; }); // Accélération soudaine
+                    // 3. On affiche le contenu final (Timers)
+                    finalContent.style.display = 'flex';
+                    // Petit délai pour permettre au display:flex d'être pris en compte avant l'opacité
+                    setTimeout(() => {
+                        finalContent.style.opacity = 1;
+                        
+                        // Explosion finale de pétales
+                        for(let i=0; i<50; i++) petals.push(new Petal());
+                    }, 100);
+                }, 500);
+            }
         }
 
-        // Écoute clic ou touch
-        window.addEventListener('touchstart', revealMagic);
-        window.addEventListener('click', revealMagic);
+        // Écouteurs globaux
+        window.addEventListener('touchstart', handleTap);
+        window.addEventListener('click', handleTap);
 
     </script>
 </body>
