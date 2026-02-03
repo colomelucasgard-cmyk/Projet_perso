@@ -28,62 +28,156 @@
 
         /* Le conteneur du texte, par-dessus le canvas */
         #content-overlay {
+            position: absolute;<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pour Toi</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Montserrat', sans-serif; /* Police moderne par défaut */
+        }
+
+        /* --- GESTION DU FOND (SLIDESHOW) --- */
+        #bg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .bg-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 2s ease-in-out; /* Transition douce de 2s */
+        }
+        .bg-slide.active {
+            opacity: 1;
+        }
+        /* Un filtre sombre par dessus les photos pour que le texte reste blanc et lisible */
+        #overlay-dim {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* 50% de noir */
+            z-index: 1;
+        }
+
+        /* --- CANVAS --- */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2; /* Au dessus des photos */
+        }
+
+        /* --- CONTENU --- */
+        #content-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 2;
+            z-index: 3;
             text-align: center;
             color: white;
-            width: 90%;
-            pointer-events: none; /* Permet de cliquer "à travers" le texte sur le canvas */
-            opacity: 0; /* Caché au début */
+            width: 85%;
+            pointer-events: none;
+            opacity: 0;
             transition: opacity 2s ease-in-out;
         }
 
-        /* Style des textes */
+        /* Typographie améliorée */
         h1 {
-            font-size: 1.8rem;
-            color: #ff758c;
-            margin-bottom: 10px;
+            font-family: 'Dancing Script', cursive; /* Police manuscrite */
+            font-size: 2.5rem;
+            color: #ff9eb5;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
-        p.intro { color: #ccc; margin-bottom: 30px; }
+        p.intro { 
+            font-size: 1rem;
+            color: #eee; 
+            margin-bottom: 30px; 
+            font-weight: 300;
+        }
 
+        /* Le style "Glassmorphism" (Verre dépoli) */
         .timer-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            padding: 15px;
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.15); /* Blanc très transparent */
+            backdrop-filter: blur(12px); /* L'effet de flou derrière */
+            -webkit-backdrop-filter: blur(12px); /* Pour Safari/iPhone */
+            padding: 20px;
+            border-radius: 20px;
             margin-bottom: 20px;
-            border: 1px solid rgba(255, 117, 140, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .timer-title { font-size: 1rem; color: #ff758c; }
-        .timer-count { font-size: 1.2rem; font-weight: bold; margin-top: 5px; }
-        
-        /* Petite instruction de départ */
+        .timer-title { 
+            font-size: 0.9rem; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ffc2d1; 
+            margin-bottom: 5px;
+        }
+        .timer-count { 
+            font-size: 1.4rem; 
+            font-weight: 600; 
+            color: #fff;
+        }
+
+        /* Instruction */
         #hint {
             position: absolute;
             bottom: 50px;
             width: 100%;
             text-align: center;
-            color: rgba(255,255,255,0.5);
-            z-index: 3;
+            color: rgba(255,255,255,0.7);
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.5rem;
+            z-index: 4;
             pointer-events: none;
             animation: pulse 2s infinite;
         }
-        @keyframes pulse { 0% {opacity:0.3;} 50% {opacity:0.7;} 100% {opacity:0.3;} }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.1);} 100% {transform: scale(1);} }
 
     </style>
 </head>
 <body>
 
+    <div id="bg-container">
+        </div>
+    <div id="overlay-dim"></div>
+
     <canvas id="canvas-container"></canvas>
 
-    <div id="hint">Touche l'écran et fais glisser ton doigt...</div>
+    <div id="hint">Touche l'écran pour un peu de magie...</div>
 
     <div id="content-overlay">
-        <h1>Joyeuse Saint-Valentin ma chérie</h1>
-        <p class="intro">Même loin, tu es partout avec moi. Je t'aime fort</p>
+        <h1>Joyeuse Saint-Valentin<br>ma chérie</h1>
+        <p class="intro">Même loin, tu es partout avec moi. Je t'aime fort.</p>
 
         <div class="timer-box">
             <div class="timer-title">Le premier bisou ⚡️</div>
@@ -98,21 +192,55 @@
 
     <script>
         // ==========================================
-        // PARTIE 1 : LES TIMERS (Logique JS)
+        // CONFIGURATION (C'EST ICI QUE TU TOUCHES)
         // ==========================================
         
-        // ATTENTION : Les mois commencent à 0 en JS ! (Juin = 5, Juillet = 6)
-        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); // 1er Juin 2025
-        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); // 17 Juillet 2025
+        // Liste de tes photos.
+        // Si tu mets tes propres photos sur GitHub, remplace les liens par 'photo1.jpg', 'photo2.jpg', etc.
+        const images = [
+            'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2000&auto=format&fit=crop', // Exemple Nature
+            'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=2000&auto=format&fit=crop', // Exemple Love
+            'https://images.unsplash.com/photo-1474552226712-ac0f0961a954?q=80&w=2000&auto=format&fit=crop'  // Exemple Ciel
+        ];
 
+        // Dates
+        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); 
+        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
+
+        // ==========================================
+        // PARTIE 0 : SLIDESHOW (Background)
+        // ==========================================
+        const bgContainer = document.getElementById('bg-container');
+        let currentSlide = 0;
+
+        // Création des divs pour chaque image
+        images.forEach((imgUrl, index) => {
+            const div = document.createElement('div');
+            div.classList.add('bg-slide');
+            div.style.backgroundImage = `url('${imgUrl}')`;
+            if(index === 0) div.classList.add('active'); // La première est visible
+            bgContainer.appendChild(div);
+        });
+
+        // Changement d'image toutes les 5 secondes
+        function changeSlide() {
+            const slides = document.querySelectorAll('.bg-slide');
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        if(images.length > 1) setInterval(changeSlide, 5000);
+
+
+        // ==========================================
+        // PARTIE 1 : TIMERS
+        // ==========================================
         function calculateTime(startDate) {
             const now = new Date();
             const diff = now - startDate;
-            
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            
             return `${days}j ${hours}h ${minutes}m`;
         }
 
@@ -120,111 +248,88 @@
             document.getElementById("timer-kiss").innerText = calculateTime(dateKiss);
             document.getElementById("timer-official").innerText = calculateTime(dateOfficial);
         }
-        
-        // Met à jour toutes les minutes pour ne pas trop consommer sur mobile
         setInterval(updateTimers, 60000);
-        updateTimers(); // Premier appel immédiat
-
+        updateTimers();
 
         // ==========================================
-        // PARTIE 2 : L'ART GÉNÉRATIF (Canvas JS)
+        // PARTIE 2 : PARTICULES (Modifié pour la transparence)
         // ==========================================
         const canvas = document.getElementById('canvas-container');
         const ctx = canvas.getContext('2d');
-        let particlesArray;
+        let particlesArray = [];
         let revealed = false;
         let touchCount = 0;
-
+        
+        // On rend le canvas transparent
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Gestion du redimensionnement (rotation écran mobile)
-        window.addEventListener('resize', function(){
+        window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
 
-        // Couleurs romantiques pour les particules
-        const colors = ['#ff758c', '#ff7eb3', '#fae1dd', '#a06cd5'];
+        const colors = ['#ff9eb5', '#ffffff', '#ffccd5']; // Couleurs plus douces pour aller sur photos
 
-        // Objet Souris/Touch
         const mouse = { x: undefined, y: undefined };
 
-        // Écouteurs d'événements Mobile (Touch) et PC (Mouse)
-        canvas.addEventListener('touchmove', function(e){
-            mouse.x = e.touches[0].clientX;
-            mouse.y = e.touches[0].clientY;
-            // On génère des particules quand ça bouge
-            for(let i = 0; i < 3; i++){
-                particlesArray.push(new Particle());
-            }
-            checkReveal();
-        });
-
-        canvas.addEventListener('mousemove', function(e){
-            mouse.x = e.x;
-            mouse.y = e.y;
-            for(let i = 0; i < 2; i++){
-                particlesArray.push(new Particle());
-            }
-            checkReveal();
-        });
-
-        // Fonction pour révéler le texte après un peu d'interaction
-        function checkReveal() {
+        // Gestion interaction
+        function handleInput(x, y) {
+            mouse.x = x;
+            mouse.y = y;
+            for(let i = 0; i < 3; i++) particlesArray.push(new Particle());
+            
             touchCount++;
-            // Après environ 50 mouvements détectés, on affiche le texte
-            if(touchCount > 50 && !revealed) {
+            if(touchCount > 40 && !revealed) {
                 revealed = true;
                 document.getElementById('content-overlay').style.opacity = 1;
                 document.getElementById('hint').style.display = 'none';
             }
         }
 
+        canvas.addEventListener('touchmove', e => handleInput(e.touches[0].clientX, e.touches[0].clientY));
+        canvas.addEventListener('mousemove', e => handleInput(e.x, e.y));
 
-        // Classe Particle (Le cœur de ton code d'ingé)
         class Particle {
             constructor(){
                 this.x = mouse.x;
                 this.y = mouse.y;
-                // Taille aléatoire
-                this.size = Math.random() * 10 + 1;
-                // Vitesse aléatoire dans toutes les directions
+                this.size = Math.random() * 8 + 1;
                 this.speedX = Math.random() * 3 - 1.5;
                 this.speedY = Math.random() * 3 - 1.5;
                 this.color = colors[Math.floor(Math.random() * colors.length)];
-                // Durée de vie de la particule pour qu'elle disparaisse
                 this.life = 100;
+                this.opacity = 1;
             }
             update(){
                 this.x += this.speedX;
                 this.y += this.speedY;
-                if(this.size > 0.2) this.size -= 0.1; // Rétrécit avec le temps
+                if(this.size > 0.2) this.size -= 0.1;
                 this.life--;
+                this.opacity = this.life / 100; // La particule s'estompe
             }
             draw(){
+                ctx.globalAlpha = this.opacity; // Transparence
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.globalAlpha = 1; // Reset
             }
         }
 
-        function init(){
-            particlesArray = [];
-        }
-
-        // La boucle d'animation principale
         function animate(){
-            // L'effet de traînée : on ne nettoie pas complètement le canvas, on dessine un voile noir transparent
-            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            // ASTUCE INGÉNIEUR : 
+            // Au lieu de dessiner du noir par dessus, on "gomme" doucement le canvas
+            // pour que le fond photo reste visible !
+            ctx.globalCompositeOperation = 'destination-out'; // Mode gomme
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Gomme à 10% de force
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
+            ctx.globalCompositeOperation = 'source-over'; // Retour au mode normal
+
             for(let i = 0; i < particlesArray.length; i++){
                 particlesArray[i].update();
                 particlesArray[i].draw();
-                
-                // Suppression des particules mortes ou trop petites
                 if(particlesArray[i].size <= 0.3 || particlesArray[i].life <= 0){
                     particlesArray.splice(i, 1);
                     i--;
@@ -233,15 +338,14 @@
             requestAnimationFrame(animate);
         }
 
-        init();
         animate();
-
-        // Petit hack pour déclencher des particules au début si elle tarde à toucher
+        
+        // Auto-démo au chargement
         setTimeout(() => {
              mouse.x = canvas.width / 2;
              mouse.y = canvas.height / 2;
-             for(let i = 0; i < 20; i++) particlesArray.push(new Particle());
-        }, 1000);
+             for(let i = 0; i < 15; i++) particlesArray.push(new Particle());
+        }, 800);
 
     </script>
 </body>
