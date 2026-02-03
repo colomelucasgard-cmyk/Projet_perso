@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pour Toi</title>
+    <style>
+        /* Reset et style de base pour mobile */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0a; /* Fond sombre */
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Le canvas qui prend tout l'écran pour l'art génératif */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Le conteneur du texte, par-dessus le canvas */
+        #content-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            text-align: center;
+            color: white;
+            width: 90%;
+            pointer-events: none; /* Permet de cliquer "à travers" le texte sur le canvas */
+            opacity: 0; /* Caché au début */
+            transition: opacity 2s ease-in-out;
+        }
+
+        /* Style des textes */
+        h1 {
+            font-size: 1.8rem;
+            color: #ff758c;
+            margin-bottom: 10px;
+        }
+        p.intro { color: #ccc; margin-bottom: 30px; }
+
+        .timer-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 117, 140, 0.3);
+        }
+        .timer-title { font-size: 1rem; color: #ff758c; }
+        .timer-count { font-size: 1.2rem; font-weight: bold; margin-top: 5px; }
+        
+        /* Petite instruction de départ */
+        #hint {
+            position: absolute;
+            bottom: 50px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            z-index: 3;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% {opacity:0.3;} 50% {opacity:0.7;} 100% {opacity:0.3;} }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-container"></canvas>
+
+    <div id="hint">Touche l'écran et fais glisser ton doigt...</div>
+
+    <div id="content-overlay">
+        <h1>Joyeuse Saint-Valentin</h1>
+        <p class="intro">Même loin, tu es partout avec moi.</p>
+
+        <div class="timer-box">
+            <div class="timer-title">Le premier bisou ⚡️</div>
+            <div id="timer-kiss" class="timer-count">Calcul...</div>
+        </div>
+
+        <div class="timer-box">
+            <div class="timer-title">Officiellement nous ❤️</div>
+            <div id="timer-official" class="timer-count">Calcul...</div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // PARTIE 1 : LES TIMERS (Logique JS)
+        // ==========================================
+        
+        // ATTENTION : Les mois commencent à 0 en JS ! (Juin = 5, Juillet = 6)
+        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); // 1er Juin 2025
+        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); // 17 Juillet 2025
+
+        function calculateTime(startDate) {
+            const now = new Date();
+            const diff = now - startDate;
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            return `${days}j ${hours}h ${minutes}m`;
+        }
+
+        function updateTimers() {
+            document.getElementById("timer-kiss").innerText = calculateTime(dateKiss);
+            document.getElementById("timer-official").innerText = calculateTime(dateOfficial);
+        }
+        
+        // Met à jour toutes les minutes pour ne pas trop consommer sur mobile
+        setInterval(updateTimers, 60000);
+        updateTimers(); // Premier appel immédiat
+
+
+        // ==========================================
+        // PARTIE 2 : L'ART GÉNÉRATIF (Canvas JS)
+        // ==========================================
+        const canvas = document.getElementById('canvas-container');
+        const ctx = canvas.getContext('2d');
+        let particlesArray;
+        let revealed = false;
+        let touchCount = 0;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Gestion du redimensionnement (rotation écran mobile)
+        window.addEventListener('resize', function(){
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Couleurs romantiques pour les particules
+        const colors = ['#ff758c', '#ff7eb3', '#fae1dd', '#a06cd5'];
+
+        // Objet Souris/Touch
+        const mouse = { x: undefined, y: undefined };
+
+        // Écouteurs d'événements Mobile (Touch) et PC (Mouse)
+        canvas.addEventListener('touchmove', function(e){
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+            // On génère des particules quand ça bouge
+            for(let i = 0; i < 3; i++){
+                particlesArray.push(new Particle());
+            }
+            checkReveal();
+        });
+
+        canvas.addEventListener('mousemove', function(e){
+            mouse.x = e.x;
+            mouse.y = e.y;
+            for(let i = 0; i < 2; i++){
+                particlesArray.push(new Particle());
+            }
+            checkReveal();
+        });
+
+        // Fonction pour révéler le texte après un peu d'interaction
+        function checkReveal() {
+            touchCount++;
+            // Après environ 50 mouvements détectés, on affiche le texte
+            if(touchCount > 50 && !revealed) {
+                revealed = true;
+                document.getElementById('content-overlay').style.opacity = 1;
+                document.getElementById('hint').style.display = 'none';
+            }
+        }
+
+
+        // Classe Particle (Le cœur de ton code d'ingé)
+        class Particle {
+            constructor(){
+                this.x = mouse.x;
+                this.y = mouse.y;
+                // Taille aléatoire
+                this.size = Math.random() * 10 + 1;
+                // Vitesse aléatoire dans toutes les directions
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                // Durée de vie de la particule pour qu'elle disparaisse
+                this.life = 100;
+            }
+            update(){
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if(this.size > 0.2) this.size -= 0.1; // Rétrécit avec le temps
+                this.life--;
+            }
+            draw(){
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function init(){
+            particlesArray = [];
+        }
+
+        // La boucle d'animation principale
+        function animate(){
+            // L'effet de traînée : on ne nettoie pas complètement le canvas, on dessine un voile noir transparent
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for(let i = 0; i < particlesArray.length; i++){
+                particlesArray[i].update();
+                particlesArray[i].draw();
+                
+                // Suppression des particules mortes ou trop petites
+                if(particlesArray[i].size <= 0.3 || particlesArray[i].life <= 0){
+                    particlesArray.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+
+        // Petit hack pour déclencher des particules au début si elle tarde à toucher
+        setTimeout(() => {
+             mouse.x = canvas.width / 2;
+             mouse.y = canvas.height / 2;
+             for(let i = 0; i < 20; i++) particlesArray.push(new Particle());
+        }, 1000);
+
+    </script>
+</body>
+</html>
