@@ -103,7 +103,7 @@
             text-align: center;
             opacity: 0; 
             transition: opacity 2.5s ease-out; 
-            pointer-events: none;
+            pointer-events: none; /* Désactivé au début, mais sera activé en JS */
             display: none; /* Retiré du flux au début */
         }
 
@@ -138,6 +138,16 @@
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
 
+        /* AJOUT POUR LA BOITE A JE T'AIME : Effet clickable */
+        .interactive-panel {
+            cursor: pointer;
+            transition: transform 0.2s;
+            pointer-events: auto !important; /* Force le clic */
+        }
+        .interactive-panel:active {
+            transform: scale(0.95);
+        }
+
         .timer-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #ffb7c5; }
         .timer-val { font-size: 1.3rem; font-weight: bold; color: white; margin-top: 5px; }
 
@@ -168,6 +178,11 @@
             <div class="timer-label">Officiellement Nous</div>
             <div id="timer-official" class="timer-val">...</div>
         </div>
+
+        <div class="glass-panel interactive-panel" style="margin-top: 25px; pointer-events: auto;" onclick="newReason()">
+            <div class="timer-label">Pourquoi je t'aime ?</div>
+            <div id="love-reason" class="timer-val" style="font-size: 1.1rem; font-weight: normal; min-height: 1.5em;">Clique ici...</div>
+        </div>
     </div>
 
     <script>
@@ -183,7 +198,6 @@
             '1000015425.jpg',
             '1000016105.jpg',
             '1000022693.jpg'
-            
         ];
 
         // DATES (INCHANGÉES)
@@ -191,17 +205,49 @@
         const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
 
         // ==========================================
-        // SCÉNARIO (Les phrases et icones)
+        // SCÉNARIO
         // ==========================================
         const scenario = [
-            { text: "Pour ma meilleure amie et partenaire", icon: "💐" }, // Bouquet
-            { text: "Pour celle qui me soutient et rend ma vie meilleure", icon: "🌟" }, // Etoile
-            { text: "Pour celle que je n'abandonnerai jamais", icon: "♾️" }, // Infini
-            { text: "Laisse moi te montrer à quel point je t'aime", icon: "💌" } // Lettre
+            { text: "Pour ma meilleure amie et partenaire", icon: "💐" }, 
+            { text: "Pour celle qui me soutient et rend ma vie meilleure", icon: "🌟" }, 
+            { text: "Pour celle que je n'abandonnerai jamais", icon: "♾️" }, 
+            { text: "Laisse moi te montrer à quel point je t'aime", icon: "💌" } 
         ];
+
+        // ==========================================
+        // AJOUT : RAISONS "JE T'AIME"
+        // ==========================================
+        const loveReasons = [
+            "Parce que tu es ma personne préférée",
+            "Pour la façon dont tu me regardes",
+            "Parce qu'avec toi, tout est encore plus magique",
+            "Pour ton rire qui illumine mes journées",
+            "Parce que tu me pousses vers le haut",
+            "Pour nos projets futurs",
+            "Parce que tu es belle à l'intérieur comme à l'extérieur",
+            "Pour ta gentillesse infinie",
+            "Parce que je me sens protégé avec toi",
+            "Parce que je serai pour toujours ton roi des cafards",
+            "Parce que tu vaux infiniment plus que tout ce que l'on a déjà dit sur toi",
+            "Parce que tu prends soin de nous",
+            "Parce que mon amour pour toi est infini"
+        ];
+
+        function newReason() {
+            // Petite vibration au clic du bouton
+            if(navigator.vibrate) navigator.vibrate(30);
+
+            const reasonDiv = document.getElementById('love-reason');
+            reasonDiv.style.opacity = 0;
+            setTimeout(() => {
+                const random = loveReasons[Math.floor(Math.random() * loveReasons.length)];
+                reasonDiv.innerText = random;
+                reasonDiv.style.opacity = 1;
+            }, 300);
+        }
         
-        let step = -1; // -1 = État initial "Touche l'écran"
-        let isAnimating = false; // Pour éviter de cliquer trop vite
+        let step = -1; 
+        let isAnimating = false; 
 
         // ==========================================
         // SLIDESHOW
@@ -309,7 +355,7 @@
         animate();
 
         // ==========================================
-        // GESTION DE L'INTERACTION (LE CŒUR DU SYSTÈME)
+        // GESTION DE L'INTERACTION
         // ==========================================
         
         const storyContainer = document.getElementById('story-container');
@@ -318,57 +364,60 @@
         const finalContent = document.getElementById('final-content');
         const overlayFilter = document.getElementById('overlay-filter');
 
-        function handleTap() {
-            if(isAnimating) return; // Empêche de cliquer pendant la transition
+        function handleTap(e) {
+            // Empêche de déclencher l'histoire si on clique sur la boite "Je t'aime" à la fin
+            if (e.target.closest('.interactive-panel')) return;
+
+            if(isAnimating) return; 
             isAnimating = true;
 
-            step++; // On avance d'une étape
+            step++; 
+
+            // AJOUT : Vibration tactile simple à chaque étape (50ms)
+            // (Fonctionne principalement sur Android)
+            if (navigator.vibrate) navigator.vibrate(50);
 
             // --- CAS 1 : ON DÉROULE L'HISTOIRE ---
             if (step < scenario.length) {
-                // 1. Fade OUT
                 storyContainer.style.opacity = 0;
 
                 setTimeout(() => {
-                    // 2. Changement de texte et icone
                     storyText.innerText = scenario[step].text;
                     storyIcon.innerText = scenario[step].icon;
                     
-                    // Petit effet de vent sur les pétales
                     petals.forEach(p => { p.speedY += 1.5; });
 
-                    // 3. Fade IN
                     storyContainer.style.opacity = 1;
                     isAnimating = false;
-                }, 500); // Temps d'attente égal à la transition CSS
+                }, 500);
             } 
             
             // --- CAS 2 : LE GRAND FINAL ---
             else {
-                // 1. On cache l'histoire
                 storyContainer.style.opacity = 0;
                 
                 setTimeout(() => {
                     storyContainer.style.display = 'none';
                     
-                    // 2. On affiche le fond photo et le filtre
                     bgContainer.style.opacity = 1;
                     overlayFilter.style.opacity = 1;
 
-                    // 3. On affiche le contenu final (Timers)
+                    // AJOUT : Vibration spéciale "Battement de coeur" pour le final
+                    // (Boum... Boum...)
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
                     finalContent.style.display = 'flex';
-                    // Petit délai pour permettre au display:flex d'être pris en compte avant l'opacité
                     setTimeout(() => {
                         finalContent.style.opacity = 1;
+                        // On réactive les événements de pointeur pour permettre de cliquer sur la boite
+                        finalContent.style.pointerEvents = 'auto'; 
                         
-                        // Explosion finale de pétales
                         for(let i=0; i<50; i++) petals.push(new Petal());
                     }, 100);
                 }, 500);
             }
         }
 
-        // Écouteurs globaux
         window.addEventListener('touchstart', handleTap);
         window.addEventListener('click', handleTap);
 
