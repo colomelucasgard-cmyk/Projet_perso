@@ -19,16 +19,16 @@
             /* FOND DE DÉPART : Dégradé Sakura */
             background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
             font-family: 'Zen Maru Gothic', sans-serif;
-            user-select: none; /* Empêche la sélection de texte */
+            user-select: none; 
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- ARRIÈRE-PLAN (SLIDESHOW - Caché au début) --- */
+        /* --- ARRIÈRE-PLAN (SLIDESHOW) --- */
         #bg-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0; /* On ne montre les photos qu'à la fin */
+            opacity: 0; 
             transition: opacity 2s ease-in-out;
         }
         .bg-slide {
@@ -41,7 +41,7 @@
         }
         .bg-slide.active { opacity: 1; }
 
-        /* Filtre sombre (Caché au début) */
+        /* Filtre sombre */
         #overlay-filter {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -51,15 +51,24 @@
             transition: opacity 2s;
         }
 
-        /* --- CANVAS (PÉTALES) --- */
+        /* --- CANVAS SAKURA (Pétales) --- */
         #canvas-sakura {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2;
-            pointer-events: auto; 
+            pointer-events: none; /* Laisse passer les clics sauf quand on secoue */
         }
 
-        /* --- CONTENEUR DES MESSAGES (Séquence) --- */
+        /* --- CANVAS BUÉE (NOUVEAU) --- */
+        #canvas-fog {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 20; /* Tout au dessus */
+            cursor: crosshair;
+            transition: opacity 1.5s ease-out;
+        }
+
+        /* --- CONTENEUR HISTOIRE --- */
         #story-container {
             position: absolute;
             top: 50%; left: 50%;
@@ -70,6 +79,7 @@
             width: 90%;
             pointer-events: none;
             transition: opacity 0.5s ease-in-out;
+            opacity: 0; /* Caché au début par la buée */
         }
 
         .big-icon { 
@@ -84,14 +94,13 @@
             font-family: 'Great Vibes', cursive; 
             font-size: 2.2rem; 
             text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            color: #d6336c; /* Rose foncé pour être lisible sur le fond clair du début */
+            color: #d6336c; 
             transition: color 2s;
         }
 
-        /* Animation de flottement pour les icones */
         @keyframes float { 0%, 100% {transform: translateY(0) scale(1);} 50% {transform: translateY(-15px) scale(1.1);} }
 
-        /* --- CONTENU FINAL (Timers - Caché au début) --- */
+        /* --- CONTENU FINAL --- */
         #final-content {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -103,8 +112,8 @@
             text-align: center;
             opacity: 0; 
             transition: opacity 2.5s ease-out; 
-            pointer-events: none; /* Désactivé au début, mais sera activé en JS */
-            display: none; /* Retiré du flux au début */
+            pointer-events: none; 
+            display: none; 
         }
 
         h1 {
@@ -138,15 +147,12 @@
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
 
-        /* AJOUT POUR LA BOITE A JE T'AIME : Effet clickable */
         .interactive-panel {
             cursor: pointer;
             transition: transform 0.2s;
-            pointer-events: auto !important; /* Force le clic */
+            pointer-events: auto !important; 
         }
-        .interactive-panel:active {
-            transform: scale(0.95);
-        }
+        .interactive-panel:active { transform: scale(0.95); }
 
         .timer-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #ffb7c5; }
         .timer-val { font-size: 1.3rem; font-weight: bold; color: white; margin-top: 5px; }
@@ -159,6 +165,8 @@
     <div id="overlay-filter"></div>
 
     <canvas id="canvas-sakura"></canvas>
+    
+    <canvas id="canvas-fog"></canvas>
 
     <div id="story-container">
         <span id="story-icon" class="big-icon">👆</span>
@@ -187,25 +195,18 @@
 
     <script>
         // ==========================================
-        // CONFIGURATION (PHOTOS)
+        // CONFIGURATION
         // ==========================================
         const images = [
-            'nous1.jpg', 
-            '1000014222.jpg',
-            '1000014295.jpg',
-            '1000014591.jpg',
-            '1000014933.jpg',
-            '1000015425.jpg',
-            '1000016105.jpg',
-            '1000022693.jpg'
+            'nous1.jpg', '1000014222.jpg', '1000014295.jpg',
+            '1000014591.jpg', '1000014933.jpg', '1000015425.jpg',
+            '1000016105.jpg', '1000022693.jpg'
         ];
-
-        // DATES (INCHANGÉES)
         const dateKiss = new Date(2025, 5, 1, 0, 0, 0); 
         const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
 
         // ==========================================
-        // SCÉNARIO
+        // SCÉNARIO & RAISONS
         // ==========================================
         const scenario = [
             { text: "Pour ma meilleure amie et partenaire", icon: "💐" }, 
@@ -214,29 +215,18 @@
             { text: "Laisse moi te montrer à quel point je t'aime", icon: "💌" } 
         ];
 
-        // ==========================================
-        // AJOUT : RAISONS "JE T'AIME"
-        // ==========================================
         const loveReasons = [
-            "Parce que tu es ma personne préférée",
-            "Pour la façon dont tu me regardes",
-            "Parce qu'avec toi, tout est encore plus magique",
-            "Pour ton rire qui illumine mes journées",
-            "Parce que tu me pousses vers le haut",
-            "Pour nos projets futurs",
-            "Parce que tu es belle à l'intérieur comme à l'extérieur",
-            "Pour ta gentillesse infinie",
-            "Parce que je me sens protégé avec toi",
-            "Parce que je serai pour toujours ton roi des cafards",
+            "Parce que tu es ma personne préférée", "Pour la façon dont tu me regardes",
+            "Parce qu'avec toi, tout est encore plus magique", "Pour ton rire qui illumine mes journées",
+            "Parce que tu me pousses vers le haut", "Pour nos projets futurs",
+            "Parce que tu es belle à l'intérieur comme à l'extérieur", "Pour ta gentillesse infinie",
+            "Parce que je me sens protégé avec toi", "Parce que je serai pour toujours ton roi des cafards",
             "Parce que tu vaux infiniment plus que tout ce que l'on a déjà dit sur toi",
-            "Parce que tu prends soin de nous",
-            "Parce que mon amour pour toi est infini"
+            "Parce que tu prends soin de nous", "Parce que mon amour pour toi est infini"
         ];
 
         function newReason() {
-            // Petite vibration au clic du bouton
             if(navigator.vibrate) navigator.vibrate(30);
-
             const reasonDiv = document.getElementById('love-reason');
             reasonDiv.style.opacity = 0;
             setTimeout(() => {
@@ -245,12 +235,94 @@
                 reasonDiv.style.opacity = 1;
             }, 300);
         }
-        
-        let step = -1; 
-        let isAnimating = false; 
 
         // ==========================================
-        // SLIDESHOW
+        // VARIABLES GLOBALES
+        // ==========================================
+        let step = -1; 
+        let isAnimating = false;
+        let fogCleared = false; // Pour savoir si on a passé l'étape buée
+
+        // ==========================================
+        // 1. LA BUÉE (FOG)
+        // ==========================================
+        const canvasFog = document.getElementById('canvas-fog');
+        const ctxFog = canvasFog.getContext('2d');
+        let width, height;
+
+        function resizeFog() {
+            canvasFog.width = window.innerWidth;
+            canvasFog.height = window.innerHeight;
+            // On remplit le canvas de "blanc givré"
+            ctxFog.fillStyle = "rgba(255, 255, 255, 0.85)";
+            ctxFog.fillRect(0, 0, canvasFog.width, canvasFog.height);
+            
+            // Petit texte d'indice sur la buée
+            ctxFog.globalCompositeOperation = 'source-over';
+            ctxFog.font = "30px 'Great Vibes'";
+            ctxFog.fillStyle = "#ff758c";
+            ctxFog.textAlign = "center";
+            ctxFog.fillText("Essuie la buée...", canvasFog.width/2, canvasFog.height/2);
+        }
+        resizeFog();
+
+        // Fonction pour "gratter"
+        function scratch(x, y) {
+            if(fogCleared) return;
+            ctxFog.globalCompositeOperation = 'destination-out';
+            ctxFog.beginPath();
+            ctxFog.arc(x, y, 40, 0, Math.PI * 2); // Taille du doigt
+            ctxFog.fill();
+            checkFogCleared();
+        }
+
+        // Vérifie si on a assez gratté
+        let scratchCount = 0;
+        function checkFogCleared() {
+            scratchCount++;
+            if(scratchCount > 60 && !fogCleared) { // Après environ 60 mouvements
+                fogCleared = true;
+                canvasFog.style.opacity = 0;
+                document.getElementById('story-container').style.opacity = 1; // On révèle l'histoire
+                setTimeout(() => { canvasFog.style.display = 'none'; }, 1500);
+            }
+        }
+
+        // Événements pour gratter
+        canvasFog.addEventListener('touchmove', function(e) {
+            e.preventDefault(); // Empêche le scroll
+            scratch(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        canvasFog.addEventListener('mousemove', function(e) {
+            if(e.buttons === 1) scratch(e.clientX, e.clientY);
+        });
+
+
+        // ==========================================
+        // 2. BOULE À NEIGE (ACCÉLÉROMÈTRE)
+        // ==========================================
+        let windX = 0;
+        let windY = 0;
+        
+        // On écoute les mouvements du téléphone
+        if (window.DeviceMotionEvent) {
+            window.addEventListener('devicemotion', function(event) {
+                // On ne capture le mouvement que si on est à l'étape finale
+                if (step >= scenario.length) {
+                    // Accélération (avec gravité)
+                    let acc = event.accelerationIncludingGravity;
+                    if (acc) {
+                        // On lisse un peu les valeurs et on inverse X pour l'effet naturel
+                        windX = -acc.x * 0.5; 
+                        windY = acc.y * 0.5; 
+                    }
+                }
+            });
+        }
+
+
+        // ==========================================
+        // SLIDESHOW & TIMERS
         // ==========================================
         const bgContainer = document.getElementById('bg-container');
         if(images.length > 0) {
@@ -273,9 +345,6 @@
         }
         setInterval(rotateSlide, 5000);
 
-        // ==========================================
-        // TIMERS LOGIC
-        // ==========================================
         function getDuration(startDate) {
             const now = new Date();
             const diff = now - startDate;
@@ -292,42 +361,55 @@
         setInterval(refreshTimers, 1000);
         refreshTimers();
 
+
         // ==========================================
-        // CANVAS SAKURA
+        // CANVAS SAKURA (Modifié pour Boule à Neige)
         // ==========================================
         const canvas = document.getElementById('canvas-sakura');
         const ctx = canvas.getContext('2d');
-        let width, height;
         let petals = [];
 
         function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
         window.addEventListener('resize', resize);
         resize();
 
         class Petal {
             constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height - height; 
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height; 
                 this.size = Math.random() * 10 + 5;
                 this.speedY = Math.random() * 1 + 0.5;
                 this.speedX = Math.random() * 2 - 1;
+                // Vitesse supplémentaire due au vent (secousse)
+                this.vx = 0;
+                this.vy = 0;
                 this.color = `rgba(255, ${Math.floor(Math.random() * 50 + 200)}, ${Math.floor(Math.random() * 50 + 200)}, ${Math.random() * 0.5 + 0.3})`;
                 this.angle = Math.random() * 360;
                 this.spin = Math.random() * 2 - 1;
             }
             update() {
-                this.y += this.speedY;
-                this.x += Math.sin(this.angle * 0.01) + this.speedX; 
+                // Application de la physique "Boule à Neige"
+                // On ajoute l'accélération du téléphone à la vitesse
+                this.vx += (windX - this.vx) * 0.1; 
+                this.vy += (windY - this.vy) * 0.1;
+
+                this.y += this.speedY + this.vy;
+                this.x += Math.sin(this.angle * 0.01) + this.speedX + this.vx; 
                 this.angle += this.spin;
-                if (this.y > height) {
+
+                // Reset si sort de l'écran
+                if (this.y > canvas.height) {
                     this.y = -20;
-                    this.x = Math.random() * width;
+                    this.x = Math.random() * canvas.width;
+                    this.vy = 0; // Reset velocity
                 }
-                if (this.x > width) this.x = 0;
-                if (this.x < 0) this.x = width;
+                if (this.y < -50) this.y = canvas.height; // Si on secoue vers le haut
+
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
             }
             draw() {
                 ctx.save();
@@ -348,7 +430,7 @@
         initPetals();
 
         function animate() {
-            ctx.clearRect(0, 0, width, height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             petals.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(animate);
         }
@@ -365,7 +447,9 @@
         const overlayFilter = document.getElementById('overlay-filter');
 
         function handleTap(e) {
-            // Empêche de déclencher l'histoire si on clique sur la boite "Je t'aime" à la fin
+            // On ne peut pas cliquer tant que la buée n'est pas partie !
+            if(!fogCleared) return; 
+
             if (e.target.closest('.interactive-panel')) return;
 
             if(isAnimating) return; 
@@ -373,8 +457,6 @@
 
             step++; 
 
-            // AJOUT : Vibration tactile simple à chaque étape (50ms)
-            // (Fonctionne principalement sur Android)
             if (navigator.vibrate) navigator.vibrate(50);
 
             // --- CAS 1 : ON DÉROULE L'HISTOIRE ---
@@ -384,9 +466,7 @@
                 setTimeout(() => {
                     storyText.innerText = scenario[step].text;
                     storyIcon.innerText = scenario[step].icon;
-                    
                     petals.forEach(p => { p.speedY += 1.5; });
-
                     storyContainer.style.opacity = 1;
                     isAnimating = false;
                 }, 500);
@@ -398,20 +478,15 @@
                 
                 setTimeout(() => {
                     storyContainer.style.display = 'none';
-                    
                     bgContainer.style.opacity = 1;
                     overlayFilter.style.opacity = 1;
 
-                    // AJOUT : Vibration spéciale "Battement de coeur" pour le final
-                    // (Boum... Boum...)
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
                     finalContent.style.display = 'flex';
                     setTimeout(() => {
                         finalContent.style.opacity = 1;
-                        // On réactive les événements de pointeur pour permettre de cliquer sur la boite
                         finalContent.style.pointerEvents = 'auto'; 
-                        
                         for(let i=0; i<50; i++) petals.push(new Petal());
                     }, 100);
                 }, 500);
