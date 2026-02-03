@@ -4,164 +4,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pour Toi</title>
-    <style>
-        /* Reset et style de base pour mobile */
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #0a0a0a; /* Fond sombre */
-            font-family: 'Arial', sans-serif;
-        }
-
-        /* Le canvas qui prend tout l'écran pour l'art génératif */
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* Le conteneur du texte, par-dessus le canvas */
-        #content-overlay {
-            position: absolute;<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pour Toi</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
+        /* --- RESET & BASE --- */
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000;
-            font-family: 'Montserrat', sans-serif; /* Police moderne par défaut */
+            /* FOND DE SECOURS : Un dégradé Sakura si les images buggent */
+            background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            font-family: 'Zen Maru Gothic', sans-serif;
         }
 
-        /* --- GESTION DU FOND (SLIDESHOW) --- */
+        /* --- ARRIÈRE-PLAN (SLIDESHOW) --- */
         #bg-container {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
         }
         .bg-slide {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover;
             background-position: center;
             opacity: 0;
-            transition: opacity 2s ease-in-out; /* Transition douce de 2s */
+            transition: opacity 2s ease-in-out;
         }
-        .bg-slide.active {
-            opacity: 1;
-        }
-        /* Un filtre sombre par dessus les photos pour que le texte reste blanc et lisible */
-        #overlay-dim {
+        .bg-slide.active { opacity: 1; }
+
+        /* Filtre blanc/rose pour adoucir les photos (effet romantique) */
+        #overlay-filter {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5); /* 50% de noir */
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(40, 10, 20, 0.4); /* Légèrement teinté sombre pour lisibilité */
             z-index: 1;
         }
 
-        /* --- CANVAS --- */
-        #canvas-container {
+        /* --- CANVAS (PÉTALES) --- */
+        #canvas-sakura {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2; /* Au dessus des photos */
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: auto; /* Important pour capter le touch */
         }
 
-        /* --- CONTENU --- */
-        #content-overlay {
+        /* --- INSTRUCTION DE DÉPART --- */
+        #start-instruction {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 3;
+            z-index: 10;
             text-align: center;
             color: white;
-            width: 85%;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 2s ease-in-out;
+            pointer-events: none; /* Laisse passer le clic vers le canvas */
+            transition: opacity 1s;
         }
+        .hand-icon { font-size: 3rem; margin-bottom: 10px; display: block; animation: float 2s infinite ease-in-out; }
+        .tap-text { font-family: 'Great Vibes', cursive; font-size: 2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
 
-        /* Typographie améliorée */
-        h1 {
-            font-family: 'Dancing Script', cursive; /* Police manuscrite */
-            font-size: 2.5rem;
-            color: #ff9eb5;
-            margin-bottom: 5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        p.intro { 
-            font-size: 1rem;
-            color: #eee; 
-            margin-bottom: 30px; 
-            font-weight: 300;
-        }
+        @keyframes float { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-15px);} }
 
-        /* Le style "Glassmorphism" (Verre dépoli) */
-        .timer-box {
-            background: rgba(255, 255, 255, 0.15); /* Blanc très transparent */
-            backdrop-filter: blur(12px); /* L'effet de flou derrière */
-            -webkit-backdrop-filter: blur(12px); /* Pour Safari/iPhone */
-            padding: 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .timer-title { 
-            font-size: 0.9rem; 
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #ffc2d1; 
-            margin-bottom: 5px;
-        }
-        .timer-count { 
-            font-size: 1.4rem; 
-            font-weight: 600; 
-            color: #fff;
-        }
-
-        /* Instruction */
-        #hint {
+        /* --- CONTENU PRINCIPAL (Caché au début) --- */
+        #main-content {
             position: absolute;
-            bottom: 50px;
-            width: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5;
+            display: flex; /* CENTRAGE PARFAIT */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
-            color: rgba(255,255,255,0.7);
-            font-family: 'Dancing Script', cursive;
-            font-size: 1.5rem;
-            z-index: 4;
+            opacity: 0; /* Invisible au départ */
+            transition: opacity 2.5s ease-out; /* Apparition lente */
             pointer-events: none;
-            animation: pulse 2s infinite;
         }
-        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.1);} 100% {transform: scale(1);} }
+
+        h1 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.5rem;
+            color: #fff0f5;
+            margin: 0 0 10px 0;
+            text-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            line-height: 1.2;
+        }
+        
+        p.subtitle {
+            font-size: 1.1rem;
+            color: #ffd1dc;
+            margin-bottom: 40px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            padding: 0 20px;
+        }
+
+        /* Glassmorphism amélioré */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 15px 25px;
+            margin: 10px;
+            width: 70%;
+            max-width: 300px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .timer-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #ffb7c5; }
+        .timer-val { font-size: 1.3rem; font-weight: bold; color: white; margin-top: 5px; }
 
     </style>
 </head>
@@ -169,183 +125,195 @@
 
     <div id="bg-container">
         </div>
-    <div id="overlay-dim"></div>
+    
+    <div id="overlay-filter"></div>
 
-    <canvas id="canvas-container"></canvas>
+    <canvas id="canvas-sakura"></canvas>
 
-    <div id="hint">Touche l'écran pour un peu de magie...</div>
+    <div id="start-instruction">
+        <span class="hand-icon">👆</span>
+        <span class="tap-text">Touche l'écran...</span>
+    </div>
 
-    <div id="content-overlay">
-        <h1>Joyeuse Saint-Valentin<br>ma chérie</h1>
-        <p class="intro">Même loin, tu es partout avec moi. Je t'aime fort.</p>
+    <div id="main-content">
+        <h1>Joyeuse<br>Saint-Valentin</h1>
+        <p class="subtitle">Pour mon âme soeur que j'aime tant</p>
 
-        <div class="timer-box">
-            <div class="timer-title">Le premier bisou ⚡️</div>
-            <div id="timer-kiss" class="timer-count">Calcul...</div>
+        <div class="glass-panel">
+            <div class="timer-label">Premier Bisou</div>
+            <div id="timer-kiss" class="timer-val">...</div>
         </div>
 
-        <div class="timer-box">
-            <div class="timer-title">Officiellement nous ❤️</div>
-            <div id="timer-official" class="timer-count">Calcul...</div>
+        <div class="glass-panel">
+            <div class="timer-label">Officiellement Nous</div>
+            <div id="timer-official" class="timer-val">...</div>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // CONFIGURATION (C'EST ICI QUE TU TOUCHES)
+        // CONFIGURATION (TES PHOTOS ICI)
         // ==========================================
-        
-        // Liste de tes photos.
-        // Si tu mets tes propres photos sur GitHub, remplace les liens par 'photo1.jpg', 'photo2.jpg', etc.
+        // Remplace par tes noms de fichiers exacts (attention minuscules/majuscules !)
         const images = [
-            'nous1.jpg', // Exemple Nature
-            '1000014222.jpg', // Exemple Love
-            '1000014295.jpg'  // Exemple Ciel
+            'nous1.jpg', 
+            '1000014222.jpg',
+            '1000014295.jpg' 
         ];
 
-        // Dates
-        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); 
-        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
+  
+        //rencontre en 2025 !
+        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); // 1er Juin (Mois 5 car Janvier = 0)
+        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); // 17 Juillet
 
         // ==========================================
-        // PARTIE 0 : SLIDESHOW (Background)
+        // 1. GESTION DU SLIDESHOW
         // ==========================================
         const bgContainer = document.getElementById('bg-container');
-        let currentSlide = 0;
-
-        // Création des divs pour chaque image
-        images.forEach((imgUrl, index) => {
-            const div = document.createElement('div');
-            div.classList.add('bg-slide');
-            div.style.backgroundImage = `url('${imgUrl}')`;
-            if(index === 0) div.classList.add('active'); // La première est visible
-            bgContainer.appendChild(div);
-        });
-
-        // Changement d'image toutes les 5 secondes
-        function changeSlide() {
-            const slides = document.querySelectorAll('.bg-slide');
-            slides[currentSlide].classList.remove('active');
-            currentSlide = (currentSlide + 1) % slides.length;
-            slides[currentSlide].classList.add('active');
+        
+        if(images.length > 0) {
+            images.forEach((img, i) => {
+                const el = document.createElement('div');
+                el.classList.add('bg-slide');
+                el.style.backgroundImage = `url('${img}')`;
+                if(i === 0) el.classList.add('active');
+                bgContainer.appendChild(el);
+            });
         }
-        if(images.length > 1) setInterval(changeSlide, 5000);
 
+        let curSlide = 0;
+        function rotateSlide() {
+            const slides = document.querySelectorAll('.bg-slide');
+            if(slides.length > 1) {
+                slides[curSlide].classList.remove('active');
+                curSlide = (curSlide + 1) % slides.length;
+                slides[curSlide].classList.add('active');
+            }
+        }
+        setInterval(rotateSlide, 5000);
 
         // ==========================================
-        // PARTIE 1 : TIMERS
+        // 2. TIMERS
         // ==========================================
-        function calculateTime(startDate) {
+        function getDuration(startDate) {
             const now = new Date();
             const diff = now - startDate;
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            return `${days}j ${hours}h ${minutes}m`;
-        }
+            if (diff < 0) return "Bientôt..."; // Sécurité si date future
 
-        function updateTimers() {
-            document.getElementById("timer-kiss").innerText = calculateTime(dateKiss);
-            document.getElementById("timer-official").innerText = calculateTime(dateOfficial);
+            const days = Math.floor(diff / (86400000));
+            const hours = Math.floor((diff % 86400000) / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            return `${days}j ${hours}h ${mins}m`;
         }
-        setInterval(updateTimers, 60000);
-        updateTimers();
+        function refreshTimers() {
+            document.getElementById('timer-kiss').innerText = getDuration(dateKiss);
+            document.getElementById('timer-official').innerText = getDuration(dateOfficial);
+        }
+        setInterval(refreshTimers, 1000); // Mise à jour chaque seconde pour effet dynamique
+        refreshTimers();
 
         // ==========================================
-        // PARTIE 2 : PARTICULES (Modifié pour la transparence)
+        // 3. MOTEUR SAKURA (CANVAS)
         // ==========================================
-        const canvas = document.getElementById('canvas-container');
+        const canvas = document.getElementById('canvas-sakura');
         const ctx = canvas.getContext('2d');
-        let particlesArray = [];
-        let revealed = false;
-        let touchCount = 0;
-        
-        // On rend le canvas transparent
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        let width, height;
+        let petals = [];
+        let isStarted = false; // Pour savoir si elle a touché l'écran
 
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        const colors = ['#ff9eb5', '#ffffff', '#ffccd5']; // Couleurs plus douces pour aller sur photos
-
-        const mouse = { x: undefined, y: undefined };
-
-        // Gestion interaction
-        function handleInput(x, y) {
-            mouse.x = x;
-            mouse.y = y;
-            for(let i = 0; i < 3; i++) particlesArray.push(new Particle());
-            
-            touchCount++;
-            if(touchCount > 40 && !revealed) {
-                revealed = true;
-                document.getElementById('content-overlay').style.opacity = 1;
-                document.getElementById('hint').style.display = 'none';
-            }
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
         }
+        window.addEventListener('resize', resize);
+        resize();
 
-        canvas.addEventListener('touchmove', e => handleInput(e.touches[0].clientX, e.touches[0].clientY));
-        canvas.addEventListener('mousemove', e => handleInput(e.x, e.y));
-
-        class Particle {
-            constructor(){
-                this.x = mouse.x;
-                this.y = mouse.y;
-                this.size = Math.random() * 8 + 1;
-                this.speedX = Math.random() * 3 - 1.5;
-                this.speedY = Math.random() * 3 - 1.5;
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-                this.life = 100;
-                this.opacity = 1;
+        class Petal {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height - height; // Commence au dessus
+                this.size = Math.random() * 10 + 5;
+                this.speedY = Math.random() * 1 + 0.5;
+                this.speedX = Math.random() * 2 - 1;
+                this.color = `rgba(255, ${Math.floor(Math.random() * 50 + 200)}, ${Math.floor(Math.random() * 50 + 200)}, ${Math.random() * 0.5 + 0.3})`;
+                this.angle = Math.random() * 360;
+                this.spin = Math.random() * 2 - 1;
             }
-            update(){
-                this.x += this.speedX;
+
+            update() {
                 this.y += this.speedY;
-                if(this.size > 0.2) this.size -= 0.1;
-                this.life--;
-                this.opacity = this.life / 100; // La particule s'estompe
+                this.x += Math.sin(this.angle * 0.01) + this.speedX; // Oscillation
+                this.angle += this.spin;
+
+                // Si on a "activé" (touché), les pétales tombent un peu plus vite
+                if (isStarted) {
+                    this.speedY += 0.001; 
+                }
+
+                // Reset si sort de l'écran
+                if (this.y > height) {
+                    this.y = -20;
+                    this.x = Math.random() * width;
+                }
+                if (this.x > width) this.x = 0;
+                if (this.x < 0) this.x = width;
             }
-            draw(){
-                ctx.globalAlpha = this.opacity; // Transparence
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle * Math.PI / 180);
                 ctx.fillStyle = this.color;
+                
+                // Dessin d'un pétale (forme ovale simple)
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.globalAlpha = 1; // Reset
+                ctx.restore();
             }
         }
 
-        function animate(){
-            // ASTUCE INGÉNIEUR : 
-            // Au lieu de dessiner du noir par dessus, on "gomme" doucement le canvas
-            // pour que le fond photo reste visible !
-            ctx.globalCompositeOperation = 'destination-out'; // Mode gomme
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Gomme à 10% de force
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalCompositeOperation = 'source-over'; // Retour au mode normal
-
-            for(let i = 0; i < particlesArray.length; i++){
-                particlesArray[i].update();
-                particlesArray[i].draw();
-                if(particlesArray[i].size <= 0.3 || particlesArray[i].life <= 0){
-                    particlesArray.splice(i, 1);
-                    i--;
-                }
+        // Créer 100 pétales
+        function initPetals() {
+            petals = [];
+            for (let i = 0; i < 80; i++) {
+                petals.push(new Petal());
             }
+        }
+        initPetals();
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height); // On efface tout à chaque frame (pas de trainée cette fois, plus net)
+            
+            petals.forEach(p => {
+                p.update();
+                p.draw();
+            });
             requestAnimationFrame(animate);
         }
-
         animate();
-        
-        // Auto-démo au chargement
-        setTimeout(() => {
-             mouse.x = canvas.width / 2;
-             mouse.y = canvas.height / 2;
-             for(let i = 0; i < 15; i++) particlesArray.push(new Particle());
-        }, 800);
+
+        // ==========================================
+        // 4. INTERACTION (Le moment magique)
+        // ==========================================
+        function revealMagic() {
+            if (isStarted) return; // Déjà fait
+            isStarted = true;
+
+            // 1. Cacher l'instruction
+            document.getElementById('start-instruction').style.opacity = 0;
+            
+            // 2. Afficher le contenu doucement
+            document.getElementById('main-content').style.opacity = 1;
+
+            // 3. Petit effet "vent" : on ajoute des pétales et on les agite
+            for(let i=0; i<30; i++) petals.push(new Petal());
+            petals.forEach(p => { p.speedY += 2; }); // Accélération soudaine
+        }
+
+        // Écoute clic ou touch
+        window.addEventListener('touchstart', revealMagic);
+        window.addEventListener('click', revealMagic);
 
     </script>
 </body>
