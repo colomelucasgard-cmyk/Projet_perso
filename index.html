@@ -498,374 +498,306 @@
         
 
     </script>
-    <style>
-    /* --- STYLES DU LECTEUR VINYLE --- */
-    #music-player-container {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        z-index: 100;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        opacity: 0; /* Caché au début */
-        transition: opacity 2s;
-    }
+  <style>
+        /* --- STYLES DU LECTEUR VINYLE & GHIBLI DUST --- */
+        #music-player-container {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 2s;
+        }
 
-    .vinyl-wrapper {
-        width: 80px;
-        height: 80px;
-        position: relative;
-        cursor: pointer;
-    }
+        .vinyl-wrapper {
+            width: 90px;
+            height: 90px;
+            position: relative;
+            cursor: pointer;
+        }
 
-    .vinyl-disc {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: radial-gradient(circle, #111 20%, #333 21%, #111 22%, #111 30%, #333 31%, #111 32%, #111 40%, #222 100%);
-        border: 2px solid rgba(255,255,255,0.2);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        animation: spin 4s linear infinite;
-        animation-play-state: paused; /* Pause par défaut */
-    }
+        .vinyl-disc {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1a1a1a 20%, #333 21%, #1a1a1a 22%, #1a1a1a 30%, #333 31%, #1a1a1a 32%, #1a1a1a 40%, #222 100%);
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: spin 5s linear infinite;
+            animation-play-state: paused;
+        }
 
-    .vinyl-label {
-        width: 35%;
-        height: 35%;
-        background: #ff758c;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
-    }
+        .vinyl-label {
+            width: 35%;
+            height: 35%;
+            background: #e9967a; /* Couleur terre cuite douce Ghibli */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+        }
 
-    /* Le cœur qui va battre */
-    .vinyl-heart {
-        font-size: 1.2rem;
-        color: white;
-        transition: transform 0.1s ease-out; /* Réactif pour la musique */
-    }
+        .vinyl-heart { font-size: 1.4rem; filter: drop-shadow(0 0 5px white); transition: transform 0.1s ease-out; }
 
-    /* Bras de lecture (décoratif) */
-    .tonearm {
-        position: absolute;
-        top: -10px;
-        right: -5px;
-        width: 30px;
-        height: 40px;
-        border-top: 3px solid #ccc;
-        border-right: 3px solid #ccc;
-        border-radius: 0 10px 0 0;
-        transform-origin: top right;
-        transform: rotate(0deg);
-        transition: transform 0.5s;
-        pointer-events: none;
-    }
-    .playing .tonearm { transform: rotate(25deg); }
-    .playing .vinyl-disc { animation-play-state: running; }
+        .tonearm {
+            position: absolute;
+            top: -15px;
+            right: -10px;
+            width: 35px;
+            height: 50px;
+            border-top: 4px solid #d4af37;
+            border-right: 4px solid #d4af37;
+            border-radius: 0 12px 0 0;
+            transform-origin: top right;
+            transform: rotate(0deg);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+        .playing .tonearm { transform: rotate(28deg); }
+        .playing .vinyl-disc { animation-play-state: running; }
 
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* --- STYLES DU COFFRE FORT (MODAL) --- */
-    #safe-modal {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85);
-        backdrop-filter: blur(8px);
-        z-index: 200;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.4s;
-    }
-    #safe-modal.open { opacity: 1; pointer-events: auto; }
+        /* --- INTERFACE PIN ROMANTIQUE (STYLE LETTRE) --- */
+        #safe-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(26, 15, 15, 0.92);
+            backdrop-filter: blur(12px);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+        #safe-modal.open { opacity: 1; pointer-events: auto; }
 
-    .safe-display {
-        font-family: 'Courier New', monospace;
-        background: #222;
-        color: #0f0;
-        padding: 15px;
-        border-radius: 10px;
-        border: 2px solid #444;
-        font-size: 2rem;
-        letter-spacing: 10px;
-        margin-bottom: 20px;
-        width: 200px;
-        text-align: center;
-        box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
-    }
+        #safe-interface {
+            background: #fdf5e6; /* Vieux papier */
+            padding: 40px 30px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 100px rgba(212, 175, 55, 0.1);
+            text-align: center;
+            border: 1px solid #d4af37;
+            max-width: 320px;
+        }
 
-    .keypad {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
-    }
+        .safe-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2rem;
+            color: #8b4513;
+            margin-bottom: 20px;
+        }
 
-    .key-btn {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        color: white;
-        font-size: 1.5rem;
-        display: flex; justify-content: center; align-items: center;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    .key-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
+        .safe-display {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: none;
+            color: #d6336c;
+            font-size: 2.5rem;
+            letter-spacing: 8px;
+            margin-bottom: 30px;
+            border-bottom: 2px dashed #d4af37;
+            padding-bottom: 5px;
+        }
 
-    /* Bouton d'accès au coffre (ajouté à la liste principale) */
-    .vault-btn {
-        margin-top: 15px;
-        background: rgba(255, 215, 0, 0.15) !important; /* Doré subtil */
-        border: 1px solid rgba(255, 215, 0, 0.5) !important;
-    }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
 
-    /* --- TICKET RÉCOMPENSE --- */
-    #reward-ticket {
-        display: none;
-        background: linear-gradient(135deg, #fffbf0 0%, #fff 100%);
-        border: 2px solid #d4af37;
-        padding: 30px;
-        text-align: center;
-        color: #333;
-        border-radius: 15px;
-        box-shadow: 0 0 30px #d4af37;
-        position: relative;
-        overflow: hidden;
-        animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        max-width: 80%;
-    }
-    
-    #reward-ticket h2 {
-        font-family: 'Great Vibes', cursive;
-        color: #d4af37;
-        font-size: 2.5rem;
-        margin: 0;
-        text-shadow: none;
-    }
-    
-    .stamp {
-        border: 3px double #d4af37;
-        padding: 10px;
-        margin-top: 15px;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-size: 0.9rem;
-    }
+        .key-btn {
+            width: 65px; height: 65px;
+            border-radius: 50%;
+            background: #fff;
+            border: 1px solid #eee;
+            color: #8b4513;
+            font-size: 1.4rem;
+            font-weight: bold;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #e6e6e6;
+            transition: all 0.1s;
+        }
+        .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #e6e6e6; background: #fffaf0; }
 
-    @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-</style>
+        /* --- TICKET RESTO STYLE "INVITATION" --- */
+        #reward-ticket {
+            display: none;
+            background: #fff;
+            padding: 40px 20px;
+            border: 8px double #d4af37;
+            text-align: center;
+            border-radius: 5px;
+            position: relative;
+            animation: unfold 0.8s ease-out;
+        }
+        @keyframes unfold { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
 
-<audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
+        .ticket-header { font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: #d4af37; margin: 0; }
+        .stamp-wax {
+            width: 60px; height: 60px;
+            background: #b22222;
+            border-radius: 50%;
+            margin: 20px auto;
+            display: flex; align-items: center; justify-content: center;
+            color: gold; font-size: 1.5rem;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            transform: rotate(-10deg);
+        }
 
-<div id="music-player-container">
-    <div class="vinyl-wrapper" id="vinyl-btn">
-        <div class="tonearm"></div>
-        <div class="vinyl-disc">
-            <div class="vinyl-label">
-                <div class="vinyl-heart">❤️</div>
+        .vault-btn { 
+            background: rgba(212, 175, 55, 0.2) !important; 
+            border: 1px solid #d4af37 !important;
+            animation: pulse-gold 2s infinite;
+        }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
+
+    </style>
+
+    <audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
+
+    <div id="music-player-container">
+        <div class="vinyl-wrapper" id="vinyl-btn">
+            <div class="tonearm"></div>
+            <div class="vinyl-disc">
+                <div class="vinyl-label"><div class="vinyl-heart">❤️</div></div>
             </div>
         </div>
     </div>
-</div>
 
-<div id="safe-modal">
-    <div id="safe-interface">
-        <div style="color:white; margin-bottom:10px;">Entre le code secret</div>
-        <div class="safe-display" id="safe-screen">----</div>
-        <div class="keypad">
-            <div class="key-btn" onclick="inputSafe(1)">1</div>
-            <div class="key-btn" onclick="inputSafe(2)">2</div>
-            <div class="key-btn" onclick="inputSafe(3)">3</div>
-            <div class="key-btn" onclick="inputSafe(4)">4</div>
-            <div class="key-btn" onclick="inputSafe(5)">5</div>
-            <div class="key-btn" onclick="inputSafe(6)">6</div>
-            <div class="key-btn" onclick="inputSafe(7)">7</div>
-            <div class="key-btn" onclick="inputSafe(8)">8</div>
-            <div class="key-btn" onclick="inputSafe(9)">9</div>
-            <div class="key-btn" style="font-size:1rem" onclick="closeSafe()">❌</div>
-            <div class="key-btn" onclick="inputSafe(0)">0</div>
-            <div class="key-btn" style="font-size:1rem" onclick="clearSafe()">⬅️</div>
+    <div id="safe-modal">
+        <div id="safe-interface">
+            <div class="safe-title">Un secret pour toi...</div>
+            <div class="safe-display" id="safe-screen">----</div>
+            <div class="keypad">
+                <div class="key-btn" onclick="inputSafe(1)">1</div>
+                <div class="key-btn" onclick="inputSafe(2)">2</div>
+                <div class="key-btn" onclick="inputSafe(3)">3</div>
+                <div class="key-btn" onclick="inputSafe(4)">4</div>
+                <div class="key-btn" onclick="inputSafe(5)">5</div>
+                <div class="key-btn" onclick="inputSafe(6)">6</div>
+                <div class="key-btn" onclick="inputSafe(7)">7</div>
+                <div class="key-btn" onclick="inputSafe(8)">8</div>
+                <div class="key-btn" onclick="inputSafe(9)">9</div>
+                <div class="key-btn" style="background:#f8d7da" onclick="closeSafe()">✕</div>
+                <div class="key-btn" onclick="inputSafe(0)">0</div>
+                <div class="key-btn" style="background:#fff3cd" onclick="clearSafe()">←</div>
+            </div>
+        </div>
+
+        <div id="reward-ticket">
+            <h2 class="ticket-header">Invitation</h2>
+            <div class="stamp-wax">❤</div>
+            <p style="letter-spacing: 1px; color: #555;">Valable pour</p>
+            <div style="font-weight: bold; font-size: 1.2rem; color: #8b4513; margin: 15px 0;">LE RESTAURANT DE TON CHOIX</div>
+            <p style="font-style: italic; font-size: 0.9rem; color: #999;">"Parce que chaque moment avec toi est un festin."</p>
+            <button onclick="closeSafe()" style="margin-top:25px; padding:12px 30px; background:#d4af37; color:white; border:none; border-radius:25px; font-family: 'Zen Maru Gothic'; cursor:pointer;">Garder précieusement</button>
         </div>
     </div>
 
-    <div id="reward-ticket">
-        <h2>Félicitations</h2>
-        <p>Ce ticket est unique et valable pour :</p>
-        <div class="stamp">UN RESTO DE TON CHOIX</div>
-        <p style="font-size:0.8rem; margin-top:10px; color:#888;">Validé par le code 1707</p>
-        <button onclick="closeSafe()" style="margin-top:20px; padding:10px 20px; background:#d4af37; color:white; border:none; border-radius:5px;">Merci mon amour !</button>
-    </div>
-</div>
-
-<script>
-    // --------------------------------------------------------
-    // GESTION DU COFFRE FORT
-    // --------------------------------------------------------
-    
-    // 1. On injecte le bouton "Zone Secrète" dans le contenu final existant
-    // On attend que la page soit chargée pour être sûr que 'final-content' existe
-    setTimeout(() => {
-        const finalContentDiv = document.getElementById('final-content');
-        if(finalContentDiv) {
-            const vaultBtn = document.createElement('div');
-            vaultBtn.className = 'glass-panel interactive-panel vault-btn';
-            vaultBtn.innerHTML = `
-                <div class="timer-label">🔒 Zone Secrète</div>
-                <div class="timer-val" style="font-size: 1rem; font-weight: normal;">Déverrouiller</div>
-            `;
-            vaultBtn.onclick = openSafe;
-            finalContentDiv.appendChild(vaultBtn);
-        }
-        
-        // On affiche aussi le lecteur de musique une fois à la fin
-        // On se base sur l'observer de changement d'opacité de final-content
-        // Mais pour faire simple, on l'affiche quand final-content est visible
-        setInterval(() => {
-            if(window.getComputedStyle(document.getElementById('final-content')).opacity > 0.5) {
-                document.getElementById('music-player-container').style.opacity = 1;
+    <script>
+        // --- GESTION DU COFFRE FORT & GHIBLI EFFECTS ---
+        setTimeout(() => {
+            const finalContentDiv = document.getElementById('final-content');
+            if(finalContentDiv) {
+                const vaultBtn = document.createElement('div');
+                vaultBtn.className = 'glass-panel interactive-panel vault-btn';
+                vaultBtn.innerHTML = `
+                    <div class="timer-label">✨ Chose Promise...</div>
+                    <div class="timer-val" style="font-size: 1rem;">Ouvrir le Secret</div>
+                `;
+                vaultBtn.onclick = openSafe;
+                finalContentDiv.appendChild(vaultBtn);
             }
+            
+            setInterval(() => {
+                if(window.getComputedStyle(document.getElementById('final-content')).opacity > 0.5) {
+                    document.getElementById('music-player-container').style.opacity = 1;
+                }
+            }, 1000);
         }, 1000);
 
-    }, 1000);
+        let currentCode = "";
+        const SECRET_CODE = "1707";
+        const modal = document.getElementById('safe-modal');
+        const screen = document.getElementById('safe-screen');
+        const interfaceDiv = document.getElementById('safe-interface');
+        const rewardDiv = document.getElementById('reward-ticket');
 
-    let currentCode = "";
-    const SECRET_CODE = "1707";
-    const modal = document.getElementById('safe-modal');
-    const screen = document.getElementById('safe-screen');
-    const interfaceDiv = document.getElementById('safe-interface');
-    const rewardDiv = document.getElementById('reward-ticket');
+        function openSafe() { modal.classList.add('open'); clearSafe(); }
+        function closeSafe() { 
+            modal.classList.remove('open');
+            setTimeout(() => { interfaceDiv.style.display = 'block'; rewardDiv.style.display = 'none'; clearSafe(); }, 500);
+        }
 
-    function openSafe() {
-        modal.classList.add('open');
-        clearSafe();
-    }
-
-    function closeSafe() {
-        modal.classList.remove('open');
-        // Reset si on réouvre
-        setTimeout(() => {
-            interfaceDiv.style.display = 'block';
-            rewardDiv.style.display = 'none';
-            clearSafe();
-        }, 500);
-    }
-
-    function inputSafe(num) {
-        if(currentCode.length < 4) {
-            currentCode += num;
-            updateScreen();
-            if(currentCode.length === 4) {
-                checkCode();
+        function inputSafe(num) {
+            if(currentCode.length < 4) {
+                currentCode += num;
+                updateScreen();
+                if(currentCode.length === 4) checkCode();
             }
         }
-    }
 
-    function clearSafe() {
-        currentCode = "";
-        updateScreen();
-        screen.style.borderColor = "#444";
-        screen.style.color = "#0f0";
-    }
+        function clearSafe() { currentCode = ""; updateScreen(); screen.style.color = "#d6336c"; }
+        function updateScreen() { screen.innerText = currentCode.padEnd(4, '•'); }
 
-    function updateScreen() {
-        screen.innerText = currentCode.padEnd(4, '-');
-    }
-
-    function checkCode() {
-        if(currentCode === SECRET_CODE) {
-            screen.style.borderColor = "#d4af37"; // Or
-            screen.style.color = "#d4af37";
-            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            
-            setTimeout(() => {
-                interfaceDiv.style.display = 'none';
-                rewardDiv.style.display = 'block';
-                // Confetti effet simple (optionnel)
-            }, 500);
-        } else {
-            screen.style.borderColor = "red";
-            screen.style.color = "red";
-            if(navigator.vibrate) navigator.vibrate(400);
-            setTimeout(clearSafe, 800);
-        }
-    }
-
-
-    // --------------------------------------------------------
-    // GESTION MUSIQUE & VISUALIZER (CŒUR QUI BAT)
-    // --------------------------------------------------------
-    const audio = document.getElementById('bg-music');
-    const vinylBtn = document.getElementById('vinyl-btn');
-    const vinylContainer = document.getElementById('music-player-container');
-    const heartIcon = document.querySelector('.vinyl-heart');
-    
-    let isPlaying = false;
-    let audioContext, analyser, source;
-
-    vinylBtn.addEventListener('click', () => {
-        if(!isPlaying) {
-            // Initialisation AudioContext (nécessite clic utilisateur)
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                source = audioContext.createMediaElementSource(audio);
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
-                analyser.fftSize = 256; // Précision
-                visualizeHeartbeat();
-            } else if (audioContext.state === 'suspended') {
-                audioContext.resume();
+        function checkCode() {
+            if(currentCode === SECRET_CODE) {
+                screen.style.color = "#d4af37";
+                if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                setTimeout(() => { interfaceDiv.style.display = 'none'; rewardDiv.style.display = 'block'; }, 600);
+            } else {
+                screen.style.color = "#ff0000";
+                if(navigator.vibrate) navigator.vibrate(400);
+                setTimeout(clearSafe, 800);
             }
-            
-            audio.play();
-            vinylContainer.classList.add('playing');
-            isPlaying = true;
-        } else {
-            audio.pause();
-            vinylContainer.classList.remove('playing');
-            isPlaying = false;
-            heartIcon.style.transform = 'scale(1)'; // Reset
         }
-    });
 
-    // Fonction qui fait battre le cœur sur les basses
-    function visualizeHeartbeat() {
-        if(!isPlaying) return;
+        // --- MUSIQUE & VISUALIZER (CŒUR QUI BAT) ---
+        const audio = document.getElementById('bg-music');
+        const vinylBtn = document.getElementById('vinyl-btn');
+        const vinylContainer = document.getElementById('music-player-container');
+        const heartIcon = document.querySelector('.vinyl-heart');
         
-        requestAnimationFrame(visualizeHeartbeat);
-        
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyser.getByteFrequencyData(dataArray);
+        let isPlaying = false;
+        let audioContext, analyser, source;
 
-        // On se concentre sur les basses fréquences (les premiers index du tableau)
-        // Disons les 10 premières bandes de fréquence
-        let bassSum = 0;
-        let bassCount = 10;
-        for (let i = 0; i < bassCount; i++) {
-            bassSum += dataArray[i];
+        vinylBtn.addEventListener('click', () => {
+            if(!isPlaying) {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    source = audioContext.createMediaElementSource(audio);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    analyser.fftSize = 256;
+                    visualizeHeartbeat();
+                } else if (audioContext.state === 'suspended') { audioContext.resume(); }
+                audio.play();
+                vinylContainer.classList.add('playing');
+                isPlaying = true;
+            } else {
+                audio.pause();
+                vinylContainer.classList.remove('playing');
+                isPlaying = false;
+            }
+        });
+
+        function visualizeHeartbeat() {
+            if(!isPlaying) return;
+            requestAnimationFrame(visualizeHeartbeat);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            let bassSum = 0;
+            for (let i = 0; i < 10; i++) bassSum += dataArray[i];
+            let scale = 1 + (bassSum / 10 / 255) * 0.6;
+            heartIcon.style.transform = `scale(${scale})`;
         }
-        let bassAverage = bassSum / bassCount;
-
-        // Calcul du scale : 1 (base) + intensité
-        // bassAverage est entre 0 et 255. On veut un scale entre 1.0 et 1.4 max
-        let scale = 1 + (bassAverage / 255) * 0.5;
-
-        // Application au petit cœur au centre du vinyle
-        heartIcon.style.transform = `scale(${scale})`;
-    }
-
-</script>
+    </script>
 </body>
 </html>
