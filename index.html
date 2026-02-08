@@ -205,7 +205,65 @@
     /* Variantes de couleurs (Tiamat) */
     .comet.blue .comet-tail { background: linear-gradient(to left, rgba(0,0,0,0), rgba(100, 220, 255, 0.8), #fff); }
     .comet.pink .comet-tail { background: linear-gradient(to left, rgba(0,0,0,0), rgba(255, 100, 150, 0.8), #fff); }
+
+    /* --- CARTE INTERACTIVE VINTAGE --- */
+    #map-modal {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(20, 10, 10, 0.95);
+        z-index: 250; /* Au dessus de tout */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.5s ease;
+    }
+    #map-modal.open { opacity: 1; pointer-events: auto; }
+
+    #map-container {
+        width: 90%;
+        height: 70%;
+        border: 4px solid #d4af37;
+        border-radius: 8px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        position: relative;
+        overflow: hidden;
+        background: #fdf5e6;
+    }
+
+    /* Effet "Vieux Papier" sur la carte */
+    .vintage-map-layer {
+        filter: sepia(0.6) contrast(1.1) brightness(0.9) hue-rotate(-10deg);
+    }
+
+    /* Style des popups (bulles d'info) */
+    .leaflet-popup-content-wrapper {
+        background: rgba(255, 250, 240, 0.95);
+        border: 1px solid #d4af37;
+        border-radius: 5px;
+        font-family: 'Zen Maru Gothic', sans-serif;
+        text-align: center;
+    }
+    .leaflet-popup-tip { background: #d4af37; }
+    
+    .map-title {
+        color: #d4af37;
+        font-family: 'Great Vibes', cursive;
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .custom-pin {
+        font-size: 2rem;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        animation: floatPin 2s infinite ease-in-out;
+    }
+    @keyframes floatPin { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
 
@@ -705,6 +763,12 @@
         }
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
 
+    <div id="map-modal">
+        <div class="map-title">Nos Souvenirs & Aventures</div>
+        <div id="map-container"></div>
+        <button onclick="closeMap()" style="margin-top:20px; padding:10px 25px; background:transparent; border:1px solid #d4af37; color:#d4af37; border-radius:20px; cursor:pointer; font-family:'Zen Maru Gothic';">Retour</button>
+    </div>
+
     </style>
 
     <audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
@@ -846,6 +910,84 @@
             let scale = 1 + (bassSum / 10 / 255) * 0.6;
             heartIcon.style.transform = `scale(${scale})`;
         }
+        // ==========================================
+    // GESTION DE LA CARTE INTERACTIVE
+    // ==========================================
+    const locations = [
+        { name: "Montpellier", lat: 43.6117, lng: 3.8777, desc: "Là où tout a commencé ✨" },
+        { name: "Toulouse", lat: 43.6047, lng: 1.4442, desc: "La ville de notre second Date 🌹" },
+        { name: "Albi", lat: 43.9251, lng: 2.1486, desc: "Pour des fêtes inoubliables 🎉" },
+        { name: "Alès", lat: 44.1272, lng: 4.0850, desc: "Là où je me repose avec toi 🏡" },
+        { name: "Lyon", lat: 45.7640, lng: 4.8357, desc: "Pour des soirées endiablées 💃" },
+        { name: "Le Mas de la Barque", lat: 44.4093, lng: 3.9118, desc: "Pour ton bonhomme de neige HelloKitty ⛄" },
+        { name: "Madrid", lat: 40.4168, lng: -3.7038, desc: "Notre future destination ! 🇪🇸" }
+    ];
+
+    let mapInitialized = false;
+    let map;
+
+    // Ajout du bouton "Carte" dans le menu final
+    setTimeout(() => {
+        const finalContentDiv = document.getElementById('final-content');
+        if(finalContentDiv) {
+            const mapBtn = document.createElement('div');
+            mapBtn.className = 'glass-panel interactive-panel';
+            mapBtn.style.marginTop = '10px';
+            mapBtn.innerHTML = `
+                <div class="timer-label">🌍 Notre Monde</div>
+                <div class="timer-val" style="font-size: 1rem; font-weight: normal;">Voir la Carte</div>
+            `;
+            mapBtn.onclick = openMap;
+            // On l'insère avant le bouton "Zone Secrète" pour l'esthétique
+            const vaultBtn = finalContentDiv.querySelector('.vault-btn');
+            if(vaultBtn) finalContentDiv.insertBefore(mapBtn, vaultBtn);
+            else finalContentDiv.appendChild(mapBtn);
+        }
+    }, 1200); // Un peu après le coffre fort
+
+    function openMap() {
+        document.getElementById('map-modal').classList.add('open');
+        
+        if (!mapInitialized) {
+            // Initialisation de Leaflet
+            // On centre grossièrement sur le sud de la France
+            map = L.map('map-container').setView([43.5, 3.0], 6);
+
+            // Fond de carte "Clair" (CartoDB Positron) qui rend super bien avec le filtre sépia
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19,
+                className: 'vintage-map-layer' // Notre classe CSS magique
+            }).addTo(map);
+
+            // Icône personnalisée (Cœur ou Épingle)
+            const heartIcon = L.divIcon({
+                className: 'custom-pin',
+                html: '📍', 
+                iconSize: [30, 42],
+                iconAnchor: [15, 42]
+            });
+
+            // Ajout des marqueurs
+            const markers = [];
+            locations.forEach(loc => {
+                const marker = L.marker([loc.lat, loc.lng], {icon: heartIcon}).addTo(map);
+                marker.bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
+                markers.push(marker);
+            });
+
+            // Ajuster la vue pour voir tous les points (incluant Madrid)
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.2)); // pad(0.2) ajoute un peu de marge
+
+            mapInitialized = true;
+        }
+    }
+
+    function closeMap() {
+        document.getElementById('map-modal').classList.remove('open');
+    }
     </script>
 </body>
 </html>
