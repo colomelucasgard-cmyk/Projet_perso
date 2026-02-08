@@ -94,9 +94,21 @@
         .leaflet-popup-content-wrapper { background: rgba(255, 250, 240, 0.95); border: 1px solid #d4af37; border-radius: 5px; font-family: 'Zen Maru Gothic', sans-serif; text-align: center; }
         .leaflet-popup-tip { background: #d4af37; }
         .map-title { color: #d4af37; font-family: 'Great Vibes', cursive; font-size: 2.5rem; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .custom-pin { font-size: 2rem; text-shadow: 0 2px 5px rgba(0,0,0,0.5); animation: floatPin 2s infinite ease-in-out; }
-        @keyframes floatPin { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
+        .custom-pin {
+        background: transparent !important;
+        border: none !important;
+        font-size: 2.5rem; /* Un peu plus gros pour bien voir */
+        line-height: 1;
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        text-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        animation: floatPin 2s infinite ease-in-out;
+        }
+        @keyframes floatPin { 
+        0%, 100% { transform: translateY(0); } 
+        50% { transform: translateY(-8px); } 
+        }
     </style>
 </head>
 <body>
@@ -556,38 +568,55 @@
         let mapInitialized = false;
         let map;
 
+        // Remplace ta fonction openMap() par celle-ci :
         function openMap() {
             document.getElementById('map-modal').classList.add('open');
             
             if (!mapInitialized) {
-                map = L.map('map-container').setView([43.5, 3.0], 6);
+                // Création de la carte
+                map = L.map('map-container').setView([43.6, 2.5], 6); // Centré sur le sud
+    
+                // Fond de carte vintage
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap &copy; CARTO',
+                    attribution: '&copy; CARTO',
                     subdomains: 'abcd',
                     maxZoom: 19,
                     className: 'vintage-map-layer'
                 }).addTo(map);
-
+    
+                // Définition de l'icône (L'Emoji)
                 const heartIcon = L.divIcon({
-                    className: 'custom-pin',
+                    className: 'custom-pin', // Utilise notre CSS corrigé
                     html: '📍', 
-                    iconSize: [30, 42],
-                    iconAnchor: [15, 42]
+                    iconSize: [40, 40], // Taille forcée du conteneur
+                    iconAnchor: [20, 40] // La pointe de l'épingle (milieu, bas)
                 });
-
+    
+                // Ajout des marqueurs
                 const markers = [];
                 locations.forEach(loc => {
                     const marker = L.marker([loc.lat, loc.lng], {icon: heartIcon}).addTo(map);
-                    marker.bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
+                    
+                    // Contenu de la bulle
+                    const popupContent = `
+                        <div style="font-family:'Zen Maru Gothic'; padding:5px;">
+                            <h3 style="margin:0 0 5px 0; color:#d4af37;">${loc.name}</h3>
+                            <p style="margin:0; font-size:0.9rem;">${loc.desc}</p>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
                     markers.push(marker);
                 });
-
+    
+                // Ajustement automatique du zoom pour tout voir
                 const group = new L.featureGroup(markers);
+                
+                // Petit délai pour laisser le temps à la modale de s'ouvrir avant de calculer la taille
                 setTimeout(() => {
-                    map.invalidateSize();
-                    map.fitBounds(group.getBounds().pad(0.2));
-                }, 200);
-
+                    map.invalidateSize(); // Force le redessin
+                    map.fitBounds(group.getBounds().pad(0.2)); // Zoom sur les points
+                }, 300);
+    
                 mapInitialized = true;
             }
         }
