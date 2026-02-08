@@ -7,271 +7,105 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <style>
         /* --- RESET & BASE --- */
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            /* FOND DE DÉPART : Dégradé Sakura */
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
             background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
             font-family: 'Zen Maru Gothic', sans-serif;
-            user-select: none; 
-            -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- ARRIÈRE-PLAN (SLIDESHOW) --- */
-        #bg-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            opacity: 0; 
-            transition: opacity 2s ease-in-out;
-        }
-        .bg-slide {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            transition: opacity 2s ease-in-out;
-        }
+        /* --- ARRIÈRE-PLAN --- */
+        #bg-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0; transition: opacity 2s ease-in-out; }
+        .bg-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s ease-in-out; }
         .bg-slide.active { opacity: 1; }
+        #overlay-filter { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(40, 10, 20, 0.5); z-index: 1; opacity: 0; transition: opacity 2s; }
 
-        /* Filtre sombre */
-        #overlay-filter {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 10, 20, 0.5); 
-            z-index: 1;
-            opacity: 0;
-            transition: opacity 2s;
-        }
+        /* --- CANVAS --- */
+        #canvas-sakura { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        #canvas-fog { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; cursor: crosshair; transition: opacity 1.5s ease-out; }
 
-        /* --- CANVAS SAKURA (Pétales) --- */
-        #canvas-sakura {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 2;
-            pointer-events: none; /* Laisse passer les clics sauf quand on secoue */
-        }
-
-        /* --- CANVAS BUÉE (NOUVEAU) --- */
-        #canvas-fog {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 20; /* Tout au dessus */
-            cursor: crosshair;
-            transition: opacity 1.5s ease-out;
-        }
-
-        /* --- CONTENEUR HISTOIRE --- */
-        #story-container {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            text-align: center;
-            color: white;
-            width: 90%;
-            pointer-events: none;
-            transition: opacity 0.5s ease-in-out;
-            opacity: 0; /* Caché au début par la buée */
-        }
-
-        .big-icon { 
-            font-size: 5rem; 
-            margin-bottom: 20px; 
-            display: block; 
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
-            animation: float 3s infinite ease-in-out; 
-        }
-        
-        .story-text { 
-            font-family: 'Great Vibes', cursive; 
-            font-size: 2.2rem; 
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            color: #d6336c; 
-            transition: color 2s;
-        }
-
+        /* --- HISTOIRE --- */
+        #story-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; text-align: center; color: white; width: 90%; pointer-events: none; transition: opacity 0.5s ease-in-out; opacity: 0; }
+        .big-icon { font-size: 5rem; margin-bottom: 20px; display: block; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); animation: float 3s infinite ease-in-out; }
+        .story-text { font-family: 'Great Vibes', cursive; font-size: 2.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.2); color: #d6336c; transition: color 2s; }
         @keyframes float { 0%, 100% {transform: translateY(0) scale(1);} 50% {transform: translateY(-15px) scale(1.1);} }
 
-        /* --- CONTENU FINAL --- */
-        #final-content {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5;
-            display: flex; 
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            opacity: 0; 
-            transition: opacity 2.5s ease-out; 
-            pointer-events: none; 
-            display: none; 
-        }
-
-        h1 {
-            font-family: 'Great Vibes', cursive;
-            font-size: 3.5rem;
-            color: #fff0f5;
-            margin: 0 0 10px 0;
-            text-shadow: 0 4px 6px rgba(0,0,0,0.5);
-            line-height: 1.2;
-        }
+        /* --- FINAL CONTENT --- */
+        #final-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; opacity: 0; transition: opacity 2.5s ease-out; pointer-events: none; display: none; }
+        h1 { font-family: 'Great Vibes', cursive; font-size: 3.5rem; color: #fff0f5; margin: 0 0 10px 0; text-shadow: 0 4px 6px rgba(0,0,0,0.5); line-height: 1.2; }
+        p.subtitle { font-size: 1.1rem; color: #ffd1dc; margin-bottom: 40px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding: 0 20px; }
         
-        p.subtitle {
-            font-size: 1.1rem;
-            color: #ffd1dc;
-            margin-bottom: 40px;
-            font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            padding: 0 20px;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            padding: 15px 25px;
-            margin: 10px;
-            width: 70%;
-            max-width: 300px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-
-        .interactive-panel {
-            cursor: pointer;
-            transition: transform 0.2s;
-            pointer-events: auto !important; 
-        }
+        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 20px; padding: 15px 25px; margin: 10px; width: 70%; max-width: 300px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+        .interactive-panel { cursor: pointer; transition: transform 0.2s; pointer-events: auto !important; }
         .interactive-panel:active { transform: scale(0.95); }
-
         .timer-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #ffb7c5; }
         .timer-val { font-size: 1.3rem; font-weight: bold; color: white; margin-top: 5px; }
 
-        /* --- EFFET COMÈTE (YOUR NAME STYLE) --- */
-    #comet-container {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 1; /* Derrière les pétales, devant le fond */
-        pointer-events: none;
-        overflow: hidden;
-    }
+        /* --- COMÈTES (Your Name) --- */
+        #comet-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; }
+        .comet { position: absolute; border-radius: 50%; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9)); opacity: 0; }
+        .comet-head { width: 4px; height: 4px; background: #fff; border-radius: 50%; position: relative; z-index: 2; }
+        .comet-tail { position: absolute; top: 50%; right: 0; width: 200px; height: 2px; transform: translateY(-50%); border-radius: 100%; z-index: 1; transform-origin: right center; }
+        @keyframes shooting-star { 0% { transform: translateX(0) translateY(0) rotate(-45deg) scale(0.8); opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateX(-150vw) translateY(150vh) rotate(-45deg) scale(1.2); opacity: 0; } }
+        .comet.blue .comet-tail { background: linear-gradient(to left, rgba(0,0,0,0), rgba(100, 220, 255, 0.8), #fff); }
+        .comet.pink .comet-tail { background: linear-gradient(to left, rgba(0,0,0,0), rgba(255, 100, 150, 0.8), #fff); }
 
-    .comet {
-        position: absolute;
-        border-radius: 50%;
-        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
-        opacity: 0;
-    }
+        /* --- VINYLE & MUSIQUE --- */
+        #music-player-container { position: absolute; bottom: 25px; right: 25px; z-index: 100; display: flex; flex-direction: column; align-items: center; opacity: 0; transition: opacity 2s; }
+        .vinyl-wrapper { width: 90px; height: 90px; position: relative; cursor: pointer; }
+        .vinyl-disc { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle, #1a1a1a 20%, #333 21%, #1a1a1a 22%, #1a1a1a 30%, #333 31%, #1a1a1a 32%, #1a1a1a 40%, #222 100%); border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; animation: spin 5s linear infinite; animation-play-state: paused; }
+        .vinyl-label { width: 35%; height: 35%; background: #e9967a; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 8px rgba(0,0,0,0.3); }
+        .vinyl-heart { font-size: 1.4rem; filter: drop-shadow(0 0 5px white); transition: transform 0.1s ease-out; }
+        .tonearm { position: absolute; top: -15px; right: -10px; width: 35px; height: 50px; border-top: 4px solid #d4af37; border-right: 4px solid #d4af37; border-radius: 0 12px 0 0; transform-origin: top right; transform: rotate(0deg); transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }
+        .playing .tonearm { transform: rotate(28deg); }
+        .playing .vinyl-disc { animation-play-state: running; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* La tête de la comète */
-    .comet-head {
-        width: 4px; height: 4px;
-        background: #fff;
-        border-radius: 50%;
-        position: relative;
-        z-index: 2;
-    }
+        /* --- COFFRE FORT (STYLE LETTRE) --- */
+        #safe-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 15, 15, 0.92); backdrop-filter: blur(12px); z-index: 200; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.6s ease; }
+        #safe-modal.open { opacity: 1; pointer-events: auto; }
+        #safe-interface { background: #fdf5e6; padding: 40px 30px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 100px rgba(212, 175, 55, 0.1); text-align: center; border: 1px solid #d4af37; max-width: 320px; }
+        .safe-title { font-family: 'Great Vibes', cursive; font-size: 2rem; color: #8b4513; margin-bottom: 20px; }
+        .safe-display { font-family: 'Zen Maru Gothic', sans-serif; background: none; color: #d6336c; font-size: 2.5rem; letter-spacing: 8px; margin-bottom: 30px; border-bottom: 2px dashed #d4af37; padding-bottom: 5px; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .key-btn { width: 65px; height: 65px; border-radius: 50%; background: #fff; border: 1px solid #eee; color: #8b4513; font-size: 1.4rem; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 0 #e6e6e6; transition: all 0.1s; }
+        .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #e6e6e6; background: #fffaf0; }
 
-    /* La queue de la comète (dégradé) */
-    .comet-tail {
-        position: absolute;
-        top: 50%; right: 0;
-        width: 200px; /* Longueur de la traînée */
-        height: 2px;
-        transform: translateY(-50%);
-        border-radius: 100%;
-        z-index: 1;
-        transform-origin: right center;
-    }
+        /* --- TICKET --- */
+        #reward-ticket { display: none; background: #fff; padding: 40px 20px; border: 8px double #d4af37; text-align: center; border-radius: 5px; position: relative; animation: unfold 0.8s ease-out; }
+        @keyframes unfold { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+        .ticket-header { font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: #d4af37; margin: 0; }
+        .stamp-wax { width: 60px; height: 60px; background: #b22222; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; color: gold; font-size: 1.5rem; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); transform: rotate(-10deg); }
 
-    /* Animation de traversée */
-    @keyframes shooting-star {
-        0% { transform: translateX(0) translateY(0) rotate(-45deg) scale(0.8); opacity: 0; }
-        10% { opacity: 1; }
-        80% { opacity: 1; }
-        100% { transform: translateX(-150vw) translateY(150vh) rotate(-45deg) scale(1.2); opacity: 0; }
-    }
+        .vault-btn { background: rgba(212, 175, 55, 0.2) !important; border: 1px solid #d4af37 !important; animation: pulse-gold 2s infinite; }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
 
-    /* Variantes de couleurs (Tiamat) */
-    .comet.blue .comet-tail { background: linear-gradient(to left, rgba(0,0,0,0), rgba(100, 220, 255, 0.8), #fff); }
-    .comet.pink .comet-tail { background: linear-gradient(to left, rgba(0,0,0,0), rgba(255, 100, 150, 0.8), #fff); }
+        /* --- CARTE INTERACTIVE --- */
+        #map-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(20, 10, 10, 0.95); z-index: 250; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+        #map-modal.open { opacity: 1; pointer-events: auto; }
+        #map-container { width: 90%; height: 70%; border: 4px solid #d4af37; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.8); position: relative; overflow: hidden; background: #fdf5e6; }
+        .vintage-map-layer { filter: sepia(0.6) contrast(1.1) brightness(0.9) hue-rotate(-10deg); }
+        .leaflet-popup-content-wrapper { background: rgba(255, 250, 240, 0.95); border: 1px solid #d4af37; border-radius: 5px; font-family: 'Zen Maru Gothic', sans-serif; text-align: center; }
+        .leaflet-popup-tip { background: #d4af37; }
+        .map-title { color: #d4af37; font-family: 'Great Vibes', cursive; font-size: 2.5rem; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .custom-pin { font-size: 2rem; text-shadow: 0 2px 5px rgba(0,0,0,0.5); animation: floatPin 2s infinite ease-in-out; }
+        @keyframes floatPin { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-    /* --- CARTE INTERACTIVE VINTAGE --- */
-    #map-modal {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(20, 10, 10, 0.95);
-        z-index: 250; /* Au dessus de tout */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.5s ease;
-    }
-    #map-modal.open { opacity: 1; pointer-events: auto; }
-
-    #map-container {
-        width: 90%;
-        height: 70%;
-        border: 4px solid #d4af37;
-        border-radius: 8px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.8);
-        position: relative;
-        overflow: hidden;
-        background: #fdf5e6;
-    }
-
-    /* Effet "Vieux Papier" sur la carte */
-    .vintage-map-layer {
-        filter: sepia(0.6) contrast(1.1) brightness(0.9) hue-rotate(-10deg);
-    }
-
-    /* Style des popups (bulles d'info) */
-    .leaflet-popup-content-wrapper {
-        background: rgba(255, 250, 240, 0.95);
-        border: 1px solid #d4af37;
-        border-radius: 5px;
-        font-family: 'Zen Maru Gothic', sans-serif;
-        text-align: center;
-    }
-    .leaflet-popup-tip { background: #d4af37; }
-    
-    .map-title {
-        color: #d4af37;
-        font-family: 'Great Vibes', cursive;
-        font-size: 2.5rem;
-        margin-bottom: 15px;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    .custom-pin {
-        font-size: 2rem;
-        text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        animation: floatPin 2s infinite ease-in-out;
-    }
-    @keyframes floatPin { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     </style>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
 
     <div id="bg-container"></div>
     <div id="overlay-filter"></div>
+    <div id="comet-container"></div>
 
     <canvas id="canvas-sakura"></canvas>
-    
     <canvas id="canvas-fog"></canvas>
 
     <div id="story-container">
@@ -299,485 +133,6 @@
         </div>
     </div>
 
-    <script>
-        // ==========================================
-        // CONFIGURATION
-        // ==========================================
-        const images = [
-            'nous1.jpg', '1000014222.jpg', '1000014295.jpg',
-            '1000014591.jpg', '1000014933.jpg', '1000015425.jpg',
-            '1000016105.jpg', '1000022693.jpg'
-        ];
-        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); 
-        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
-
-        // ==========================================
-        // SCÉNARIO & RAISONS
-        // ==========================================
-        const scenario = [
-            { text: "Pour ma meilleure amie et partenaire", icon: "💐" }, 
-            { text: "Pour celle qui me soutient et rend ma vie meilleure", icon: "🌟" }, 
-            { text: "Pour celle que je n'abandonnerai jamais", icon: "♾️" }, 
-            { text: "Laisse moi te montrer à quel point je t'aime", icon: "💌" } 
-        ];
-
-        const loveReasons = [
-            "Parce que tu es ma personne préférée", "Pour la façon dont tu me regardes",
-            "Parce qu'avec toi, tout est encore plus magique", "Pour ton rire qui illumine mes journées",
-            "Parce que tu me pousses vers le haut", "Pour nos projets futurs",
-            "Parce que tu es belle à l'intérieur comme à l'extérieur", "Pour ta gentillesse infinie",
-            "Parce que je me sens protégé avec toi", "Parce que je serai pour toujours ton roi des cafards",
-            "Parce que tu vaux infiniment plus que tout ce que l'on a déjà dit sur toi",
-            "Parce que tu prends soin de nous", "Parce que mon amour pour toi est infini"
-        ];
-
-        function newReason() {
-            if(navigator.vibrate) navigator.vibrate(30);
-            const reasonDiv = document.getElementById('love-reason');
-            reasonDiv.style.opacity = 0;
-            setTimeout(() => {
-                const random = loveReasons[Math.floor(Math.random() * loveReasons.length)];
-                reasonDiv.innerText = random;
-                reasonDiv.style.opacity = 1;
-            }, 300);
-        }
-
-        // ==========================================
-        // VARIABLES GLOBALES
-        // ==========================================
-        let step = -1; 
-        let isAnimating = false;
-        let fogCleared = false; // Pour savoir si on a passé l'étape buée
-
-        // ==========================================
-        // 1. LA BUÉE (FOG)
-        // ==========================================
-        const canvasFog = document.getElementById('canvas-fog');
-        const ctxFog = canvasFog.getContext('2d');
-        let width, height;
-
-        function resizeFog() {
-            canvasFog.width = window.innerWidth;
-            canvasFog.height = window.innerHeight;
-            // On remplit le canvas de "blanc givré"
-            ctxFog.fillStyle = "rgba(255, 255, 255, 0.85)";
-            ctxFog.fillRect(0, 0, canvasFog.width, canvasFog.height);
-            
-            // Petit texte d'indice sur la buée
-            ctxFog.globalCompositeOperation = 'source-over';
-            ctxFog.font = "30px 'Great Vibes'";
-            ctxFog.fillStyle = "#ff758c";
-            ctxFog.textAlign = "center";
-            ctxFog.fillText("Essuie la buée...", canvasFog.width/2, canvasFog.height/2);
-        }
-        resizeFog();
-
-        // Fonction pour "gratter"
-        function scratch(x, y) {
-            if(fogCleared) return;
-            ctxFog.globalCompositeOperation = 'destination-out';
-            ctxFog.beginPath();
-            ctxFog.arc(x, y, 40, 0, Math.PI * 2); // Taille du doigt
-            ctxFog.fill();
-            checkFogCleared();
-        }
-
-        // Vérifie si on a assez gratté
-        let scratchCount = 0;
-        function checkFogCleared() {
-            scratchCount++;
-            if(scratchCount > 60 && !fogCleared) { // Après environ 60 mouvements
-                fogCleared = true;
-                canvasFog.style.opacity = 0;
-                document.getElementById('story-container').style.opacity = 1; // On révèle l'histoire
-                setTimeout(() => { canvasFog.style.display = 'none'; }, 1500);
-            }
-        }
-
-        // Événements pour gratter
-        canvasFog.addEventListener('touchmove', function(e) {
-            e.preventDefault(); // Empêche le scroll
-            scratch(e.touches[0].clientX, e.touches[0].clientY);
-        });
-        canvasFog.addEventListener('mousemove', function(e) {
-            if(e.buttons === 1) scratch(e.clientX, e.clientY);
-        });
-
-
-        // ==========================================
-        // 2. BOULE À NEIGE (ACCÉLÉROMÈTRE)
-        // ==========================================
-        let windX = 0;
-        let windY = 0;
-        
-        // On écoute les mouvements du téléphone
-        if (window.DeviceMotionEvent) {
-            window.addEventListener('devicemotion', function(event) {
-                // On ne capture le mouvement que si on est à l'étape finale
-                if (step >= scenario.length) {
-                    // Accélération (avec gravité)
-                    let acc = event.accelerationIncludingGravity;
-                    if (acc) {
-                        // On lisse un peu les valeurs et on inverse X pour l'effet naturel
-                        windX = -acc.x * 0.5; 
-                        windY = acc.y * 0.5; 
-                    }
-                }
-            });
-        }
-
-
-        // ==========================================
-        // SLIDESHOW & TIMERS
-        // ==========================================
-        const bgContainer = document.getElementById('bg-container');
-        if(images.length > 0) {
-            images.forEach((img, i) => {
-                const el = document.createElement('div');
-                el.classList.add('bg-slide');
-                el.style.backgroundImage = `url('${img}')`;
-                if(i === 0) el.classList.add('active');
-                bgContainer.appendChild(el);
-            });
-        }
-        let curSlide = 0;
-        function rotateSlide() {
-            const slides = document.querySelectorAll('.bg-slide');
-            if(slides.length > 1) {
-                slides[curSlide].classList.remove('active');
-                curSlide = (curSlide + 1) % slides.length;
-                slides[curSlide].classList.add('active');
-            }
-        }
-        setInterval(rotateSlide, 5000);
-
-        function getDuration(startDate) {
-            const now = new Date();
-            const diff = now - startDate;
-            if (diff < 0) return "Bientôt..."; 
-            const days = Math.floor(diff / (86400000));
-            const hours = Math.floor((diff % 86400000) / 3600000);
-            const mins = Math.floor((diff % 3600000) / 60000);
-            return `${days}j ${hours}h ${mins}m`;
-        }
-        function refreshTimers() {
-            document.getElementById('timer-kiss').innerText = getDuration(dateKiss);
-            document.getElementById('timer-official').innerText = getDuration(dateOfficial);
-        }
-        setInterval(refreshTimers, 1000);
-        refreshTimers();
-
-
-        // ==========================================
-        // CANVAS SAKURA (Modifié pour Boule à Neige)
-        // ==========================================
-        const canvas = document.getElementById('canvas-sakura');
-        const ctx = canvas.getContext('2d');
-        let petals = [];
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        class Petal {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height - canvas.height; 
-                this.size = Math.random() * 10 + 5;
-                this.speedY = Math.random() * 1 + 0.5;
-                this.speedX = Math.random() * 2 - 1;
-                // Vitesse supplémentaire due au vent (secousse)
-                this.vx = 0;
-                this.vy = 0;
-                this.color = `rgba(255, ${Math.floor(Math.random() * 50 + 200)}, ${Math.floor(Math.random() * 50 + 200)}, ${Math.random() * 0.5 + 0.3})`;
-                this.angle = Math.random() * 360;
-                this.spin = Math.random() * 2 - 1;
-            }
-            update() {
-                // Application de la physique "Boule à Neige"
-                // On ajoute l'accélération du téléphone à la vitesse
-                this.vx += (windX - this.vx) * 0.1; 
-                this.vy += (windY - this.vy) * 0.1;
-
-                this.y += this.speedY + this.vy;
-                this.x += Math.sin(this.angle * 0.01) + this.speedX + this.vx; 
-                this.angle += this.spin;
-
-                // Reset si sort de l'écran
-                if (this.y > canvas.height) {
-                    this.y = -20;
-                    this.x = Math.random() * canvas.width;
-                    this.vy = 0; // Reset velocity
-                }
-                if (this.y < -50) this.y = canvas.height; // Si on secoue vers le haut
-
-                if (this.x > canvas.width) this.x = 0;
-                if (this.x < 0) this.x = canvas.width;
-            }
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.angle * Math.PI / 180);
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        function initPetals() {
-            petals = [];
-            for (let i = 0; i < 80; i++) petals.push(new Petal());
-        }
-        initPetals();
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            petals.forEach(p => { p.update(); p.draw(); });
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // ==========================================
-        // GESTION DE L'INTERACTION
-        // ==========================================
-        
-        const storyContainer = document.getElementById('story-container');
-        const storyText = document.getElementById('story-text');
-        const storyIcon = document.getElementById('story-icon');
-        const finalContent = document.getElementById('final-content');
-        const overlayFilter = document.getElementById('overlay-filter');
-
-        function handleTap(e) {
-            // On ne peut pas cliquer tant que la buée n'est pas partie !
-            if(!fogCleared) return; 
-
-            if (e.target.closest('.interactive-panel')) return;
-
-            if(isAnimating) return; 
-            isAnimating = true;
-
-            step++; 
-
-            if (navigator.vibrate) navigator.vibrate(50);
-
-            // --- CAS 1 : ON DÉROULE L'HISTOIRE ---
-            if (step < scenario.length) {
-                storyContainer.style.opacity = 0;
-
-                setTimeout(() => {
-                    storyText.innerText = scenario[step].text;
-                    storyIcon.innerText = scenario[step].icon;
-                    petals.forEach(p => { p.speedY += 1.5; });
-                    storyContainer.style.opacity = 1;
-                    isAnimating = false;
-                }, 500);
-            } 
-            
-            // --- CAS 2 : LE GRAND FINAL ---
-            else {
-                storyContainer.style.opacity = 0;
-                
-                setTimeout(() => {
-                    storyContainer.style.display = 'none';
-                    bgContainer.style.opacity = 1;
-                    overlayFilter.style.opacity = 1;
-
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-
-                    finalContent.style.display = 'flex';
-                    setTimeout(() => {
-                        finalContent.style.opacity = 1;
-                        finalContent.style.pointerEvents = 'auto'; 
-                        for(let i=0; i<50; i++) petals.push(new Petal());
-                    }, 100);
-                }, 500);
-            }
-        }
-
-        window.addEventListener('touchstart', handleTap);
-        window.addEventListener('click', handleTap);
-        
-
-    </script>
-  <style>
-        /* --- STYLES DU LECTEUR VINYLE & GHIBLI DUST --- */
-        #music-player-container {
-            position: absolute;
-            bottom: 25px;
-            right: 25px;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 2s;
-        }
-
-        .vinyl-wrapper {
-            width: 90px;
-            height: 90px;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .vinyl-disc {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: radial-gradient(circle, #1a1a1a 20%, #333 21%, #1a1a1a 22%, #1a1a1a 30%, #333 31%, #1a1a1a 32%, #1a1a1a 40%, #222 100%);
-            border: 2px solid rgba(255,255,255,0.1);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            animation: spin 5s linear infinite;
-            animation-play-state: paused;
-        }
-
-        .vinyl-label {
-            width: 35%;
-            height: 35%;
-            background: #e9967a; /* Couleur terre cuite douce Ghibli */
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
-        }
-
-        .vinyl-heart { font-size: 1.4rem; filter: drop-shadow(0 0 5px white); transition: transform 0.1s ease-out; }
-
-        .tonearm {
-            position: absolute;
-            top: -15px;
-            right: -10px;
-            width: 35px;
-            height: 50px;
-            border-top: 4px solid #d4af37;
-            border-right: 4px solid #d4af37;
-            border-radius: 0 12px 0 0;
-            transform-origin: top right;
-            transform: rotate(0deg);
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-        }
-        .playing .tonearm { transform: rotate(28deg); }
-        .playing .vinyl-disc { animation-play-state: running; }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* --- INTERFACE PIN ROMANTIQUE (STYLE LETTRE) --- */
-        #safe-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(26, 15, 15, 0.92);
-            backdrop-filter: blur(12px);
-            z-index: 200;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.6s ease;
-        }
-        #safe-modal.open { opacity: 1; pointer-events: auto; }
-
-        #safe-interface {
-            background: #fdf5e6; /* Vieux papier */
-            padding: 40px 30px;
-            border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 100px rgba(212, 175, 55, 0.1);
-            text-align: center;
-            border: 1px solid #d4af37;
-            max-width: 320px;
-        }
-
-        .safe-title {
-            font-family: 'Great Vibes', cursive;
-            font-size: 2rem;
-            color: #8b4513;
-            margin-bottom: 20px;
-        }
-
-        .safe-display {
-            font-family: 'Zen Maru Gothic', sans-serif;
-            background: none;
-            color: #d6336c;
-            font-size: 2.5rem;
-            letter-spacing: 8px;
-            margin-bottom: 30px;
-            border-bottom: 2px dashed #d4af37;
-            padding-bottom: 5px;
-        }
-
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-
-        .key-btn {
-            width: 65px; height: 65px;
-            border-radius: 50%;
-            background: #fff;
-            border: 1px solid #eee;
-            color: #8b4513;
-            font-size: 1.4rem;
-            font-weight: bold;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #e6e6e6;
-            transition: all 0.1s;
-        }
-        .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #e6e6e6; background: #fffaf0; }
-
-        /* --- TICKET RESTO STYLE "INVITATION" --- */
-        #reward-ticket {
-            display: none;
-            background: #fff;
-            padding: 40px 20px;
-            border: 8px double #d4af37;
-            text-align: center;
-            border-radius: 5px;
-            position: relative;
-            animation: unfold 0.8s ease-out;
-        }
-        @keyframes unfold { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
-
-        .ticket-header { font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: #d4af37; margin: 0; }
-        .stamp-wax {
-            width: 60px; height: 60px;
-            background: #b22222;
-            border-radius: 50%;
-            margin: 20px auto;
-            display: flex; align-items: center; justify-content: center;
-            color: gold; font-size: 1.5rem;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-            transform: rotate(-10deg);
-        }
-
-        .vault-btn { 
-            background: rgba(212, 175, 55, 0.2) !important; 
-            border: 1px solid #d4af37 !important;
-            animation: pulse-gold 2s infinite;
-        }
-        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
-
-    </style>
-
-    <audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
-
-    <div id="music-player-container">
-        <div class="vinyl-wrapper" id="vinyl-btn">
-            <div class="tonearm"></div>
-            <div class="vinyl-disc">
-                <div class="vinyl-label"><div class="vinyl-heart">❤️</div></div>
-            </div>
-        </div>
-    </div>
-
-    @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
-    </style> 
     <audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
 
     <div id="music-player-container">
@@ -794,7 +149,7 @@
         <div id="map-container"></div>
         <button onclick="closeMap()" style="margin-top:20px; padding:10px 25px; background:transparent; border:1px solid #d4af37; color:#d4af37; border-radius:20px; cursor:pointer; font-family:'Zen Maru Gothic';">Retour</button>
     </div>
-        
+
     <div id="safe-modal">
         <div id="safe-interface">
             <div class="safe-title">Un secret pour toi...</div>
@@ -826,71 +181,277 @@
     </div>
 
     <script>
-        // --- GESTION DU COFFRE FORT & GHIBLI EFFECTS ---
-        setTimeout(() => {
-            const finalContentDiv = document.getElementById('final-content');
-            if(finalContentDiv) {
-                const vaultBtn = document.createElement('div');
-                vaultBtn.className = 'glass-panel interactive-panel vault-btn';
-                vaultBtn.innerHTML = `
-                    <div class="timer-label">✨ Chose Promise...</div>
-                    <div class="timer-val" style="font-size: 1rem;">Ouvrir le Secret</div>
-                `;
-                vaultBtn.onclick = openSafe;
-                finalContentDiv.appendChild(vaultBtn);
+        // ==========================================
+        // CONFIG & VARIABLES
+        // ==========================================
+        const images = [
+            'nous1.jpg', '1000014222.jpg', '1000014295.jpg',
+            '1000014591.jpg', '1000014933.jpg', '1000015425.jpg',
+            '1000016105.jpg', '1000022693.jpg'
+        ];
+        const dateKiss = new Date(2025, 5, 1, 0, 0, 0); 
+        const dateOfficial = new Date(2025, 6, 17, 0, 0, 0); 
+
+        const scenario = [
+            { text: "Pour ma meilleure amie et partenaire", icon: "💐" }, 
+            { text: "Pour celle qui me soutient et rend ma vie meilleure", icon: "🌟" }, 
+            { text: "Pour celle que je n'abandonnerai jamais", icon: "♾️" }, 
+            { text: "Laisse moi te montrer à quel point je t'aime", icon: "💌" } 
+        ];
+
+        const loveReasons = [
+            "Parce que tu es ma personne préférée", "Pour la façon dont tu me regardes",
+            "Parce qu'avec toi, tout est encore plus magique", "Pour ton rire qui illumine mes journées",
+            "Parce que tu me pousses vers le haut", "Pour nos projets futurs",
+            "Parce que tu es belle à l'intérieur comme à l'extérieur", "Pour ta gentillesse infinie",
+            "Parce que je me sens protégé avec toi", "Parce que je serai pour toujours ton roi des cafards",
+            "Parce que tu vaux infiniment plus que tout ce que l'on a déjà dit sur toi",
+            "Parce que tu prends soin de nous", "Parce que mon amour pour toi est infini"
+        ];
+
+        let step = -1; 
+        let isAnimating = false;
+        let fogCleared = false;
+        let windX = 0, windY = 0;
+
+        // ==========================================
+        // SYSTEME DE BUÉE
+        // ==========================================
+        const canvasFog = document.getElementById('canvas-fog');
+        const ctxFog = canvasFog.getContext('2d');
+
+        function resizeFog() {
+            canvasFog.width = window.innerWidth;
+            canvasFog.height = window.innerHeight;
+            ctxFog.fillStyle = "rgba(255, 255, 255, 0.85)";
+            ctxFog.fillRect(0, 0, canvasFog.width, canvasFog.height);
+            ctxFog.globalCompositeOperation = 'source-over';
+            ctxFog.font = "30px 'Great Vibes'";
+            ctxFog.fillStyle = "#ff758c";
+            ctxFog.textAlign = "center";
+            ctxFog.fillText("Essuie la buée...", canvasFog.width/2, canvasFog.height/2);
+        }
+        resizeFog();
+
+        function scratch(x, y) {
+            if(fogCleared) return;
+            ctxFog.globalCompositeOperation = 'destination-out';
+            ctxFog.beginPath();
+            ctxFog.arc(x, y, 40, 0, Math.PI * 2);
+            ctxFog.fill();
+            checkFogCleared();
+        }
+
+        let scratchCount = 0;
+        function checkFogCleared() {
+            scratchCount++;
+            if(scratchCount > 60 && !fogCleared) {
+                fogCleared = true;
+                canvasFog.style.opacity = 0;
+                document.getElementById('story-container').style.opacity = 1;
+                setTimeout(() => { canvasFog.style.display = 'none'; }, 1500);
             }
-            
-            setInterval(() => {
-                if(window.getComputedStyle(document.getElementById('final-content')).opacity > 0.5) {
-                    document.getElementById('music-player-container').style.opacity = 1;
-                }
-            }, 1000);
+        }
+        canvasFog.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e.touches[0].clientX, e.touches[0].clientY); });
+        canvasFog.addEventListener('mousemove', (e) => { if(e.buttons === 1) scratch(e.clientX, e.clientY); });
+
+        // ==========================================
+        // SYSTEME D'HISTOIRE & CLICK
+        // ==========================================
+        const storyContainer = document.getElementById('story-container');
+        const storyText = document.getElementById('story-text');
+        const storyIcon = document.getElementById('story-icon');
+        const finalContent = document.getElementById('final-content');
+        const overlayFilter = document.getElementById('overlay-filter');
+        const bgContainer = document.getElementById('bg-container');
+
+        function handleTap(e) {
+            if(!fogCleared) return; 
+            if (e.target.closest('.interactive-panel') || e.target.closest('button')) return;
+            if(isAnimating) return; 
+            isAnimating = true;
+            step++; 
+            if (navigator.vibrate) navigator.vibrate(50);
+
+            if (step < scenario.length) {
+                storyContainer.style.opacity = 0;
+                setTimeout(() => {
+                    storyText.innerText = scenario[step].text;
+                    storyIcon.innerText = scenario[step].icon;
+                    storyContainer.style.opacity = 1;
+                    isAnimating = false;
+                }, 500);
+            } else {
+                storyContainer.style.opacity = 0;
+                setTimeout(() => {
+                    storyContainer.style.display = 'none';
+                    bgContainer.style.opacity = 1;
+                    overlayFilter.style.opacity = 1;
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                    finalContent.style.display = 'flex';
+                    setTimeout(() => {
+                        finalContent.style.opacity = 1;
+                        finalContent.style.pointerEvents = 'auto'; 
+                    }, 100);
+                }, 500);
+            }
+        }
+        window.addEventListener('touchstart', handleTap);
+        window.addEventListener('click', handleTap);
+
+        // ==========================================
+        // FOND D'ÉCRAN & TIMER
+        // ==========================================
+        if(images.length > 0) {
+            images.forEach((img, i) => {
+                const el = document.createElement('div');
+                el.classList.add('bg-slide');
+                el.style.backgroundImage = `url('${img}')`;
+                if(i === 0) el.classList.add('active');
+                bgContainer.appendChild(el);
+            });
+        }
+        let curSlide = 0;
+        setInterval(() => {
+            const slides = document.querySelectorAll('.bg-slide');
+            if(slides.length > 1) {
+                slides[curSlide].classList.remove('active');
+                curSlide = (curSlide + 1) % slides.length;
+                slides[curSlide].classList.add('active');
+            }
+        }, 5000);
+
+        function getDuration(startDate) {
+            const now = new Date();
+            const diff = now - startDate;
+            if (diff < 0) return "Bientôt..."; 
+            const days = Math.floor(diff / (86400000));
+            const hours = Math.floor((diff % 86400000) / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            return `${days}j ${hours}h ${mins}m`;
+        }
+        setInterval(() => {
+            document.getElementById('timer-kiss').innerText = getDuration(dateKiss);
+            document.getElementById('timer-official').innerText = getDuration(dateOfficial);
         }, 1000);
 
-        let currentCode = "";
-        const SECRET_CODE = "1707";
-        const modal = document.getElementById('safe-modal');
-        const screen = document.getElementById('safe-screen');
-        const interfaceDiv = document.getElementById('safe-interface');
-        const rewardDiv = document.getElementById('reward-ticket');
-
-        function openSafe() { modal.classList.add('open'); clearSafe(); }
-        function closeSafe() { 
-            modal.classList.remove('open');
-            setTimeout(() => { interfaceDiv.style.display = 'block'; rewardDiv.style.display = 'none'; clearSafe(); }, 500);
+        function newReason() {
+            if(navigator.vibrate) navigator.vibrate(30);
+            const reasonDiv = document.getElementById('love-reason');
+            reasonDiv.style.opacity = 0;
+            setTimeout(() => {
+                reasonDiv.innerText = loveReasons[Math.floor(Math.random() * loveReasons.length)];
+                reasonDiv.style.opacity = 1;
+            }, 300);
         }
 
-        function inputSafe(num) {
-            if(currentCode.length < 4) {
-                currentCode += num;
-                updateScreen();
-                if(currentCode.length === 4) checkCode();
+        // ==========================================
+        // CANVAS SAKURA & ACCELEROMETRE
+        // ==========================================
+        if (window.DeviceMotionEvent) {
+            window.addEventListener('devicemotion', function(event) {
+                if (step >= scenario.length) {
+                    let acc = event.accelerationIncludingGravity;
+                    if (acc) { windX = -acc.x * 0.5; windY = acc.y * 0.5; }
+                }
+            });
+        }
+
+        const canvas = document.getElementById('canvas-sakura');
+        const ctx = canvas.getContext('2d');
+        let petals = [];
+        
+        function resizeSakura() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeSakura);
+        resizeSakura();
+
+        class Petal {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height; 
+                this.size = Math.random() * 10 + 5;
+                this.speedY = Math.random() * 1 + 0.5;
+                this.speedX = Math.random() * 2 - 1;
+                this.vx = 0; this.vy = 0;
+                this.color = `rgba(255, ${Math.floor(Math.random() * 50 + 200)}, ${Math.floor(Math.random() * 50 + 200)}, ${Math.random() * 0.5 + 0.3})`;
+                this.angle = Math.random() * 360;
+                this.spin = Math.random() * 2 - 1;
+            }
+            update() {
+                this.vx += (windX - this.vx) * 0.1; 
+                this.vy += (windY - this.vy) * 0.1;
+                this.y += this.speedY + this.vy;
+                this.x += Math.sin(this.angle * 0.01) + this.speedX + this.vx; 
+                this.angle += this.spin;
+                if (this.y > canvas.height) { this.y = -20; this.x = Math.random() * canvas.width; this.vy = 0; }
+                if (this.y < -50) this.y = canvas.height;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
             }
         }
+        for (let i = 0; i < 80; i++) petals.push(new Petal());
+        function animateSakura() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            petals.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateSakura);
+        }
+        animateSakura();
 
-        function clearSafe() { currentCode = ""; updateScreen(); screen.style.color = "#d6336c"; }
-        function updateScreen() { screen.innerText = currentCode.padEnd(4, '•'); }
-
-        function checkCode() {
-            if(currentCode === SECRET_CODE) {
-                screen.style.color = "#d4af37";
-                if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                setTimeout(() => { interfaceDiv.style.display = 'none'; rewardDiv.style.display = 'block'; }, 600);
-            } else {
-                screen.style.color = "#ff0000";
-                if(navigator.vibrate) navigator.vibrate(400);
-                setTimeout(clearSafe, 800);
+        // ==========================================
+        // COMÈTES (Your Name)
+        // ==========================================
+        const cometContainer = document.getElementById('comet-container');
+        function spawnComet() {
+            const isFinalPhase = window.getComputedStyle(finalContent).opacity > 0.1;
+            if (isFinalPhase) {
+                createCometElement();
+                if(Math.random() > 0.7) setTimeout(() => createCometElement(true), 200);
             }
+            let nextSpawn = Math.random() * 6000 + 4000;
+            setTimeout(spawnComet, nextSpawn);
         }
 
-        // --- MUSIQUE & VISUALIZER (CŒUR QUI BAT) ---
+        function createCometElement(isPair = false) {
+            const comet = document.createElement('div');
+            const type = (Math.random() > 0.5 || isPair) ? 'pink' : 'blue';
+            comet.classList.add('comet', type);
+            comet.innerHTML = `<div class="comet-head"></div><div class="comet-tail"></div>`;
+            const startY = Math.random() * (window.innerHeight / 2);
+            const startX = window.innerWidth + 50;
+            comet.style.top = startY + 'px';
+            comet.style.left = startX + 'px';
+            const duration = Math.random() * 2 + 3;
+            comet.style.animation = `shooting-star ${duration}s linear forwards`;
+            cometContainer.appendChild(comet);
+            setTimeout(() => { comet.remove(); }, duration * 1000);
+        }
+        setTimeout(spawnComet, 2000);
+
+        // ==========================================
+        // MUSIQUE & VINYLE
+        // ==========================================
         const audio = document.getElementById('bg-music');
         const vinylBtn = document.getElementById('vinyl-btn');
         const vinylContainer = document.getElementById('music-player-container');
         const heartIcon = document.querySelector('.vinyl-heart');
-        
         let isPlaying = false;
         let audioContext, analyser, source;
+
+        setInterval(() => {
+            if(window.getComputedStyle(finalContent).opacity > 0.5) {
+                vinylContainer.style.opacity = 1;
+            }
+        }, 1000);
 
         vinylBtn.addEventListener('click', () => {
             if(!isPlaying) {
@@ -923,84 +484,118 @@
             let scale = 1 + (bassSum / 10 / 255) * 0.6;
             heartIcon.style.transform = `scale(${scale})`;
         }
+
         // ==========================================
-    // GESTION DE LA CARTE INTERACTIVE
-    // ==========================================
-    const locations = [
-        { name: "Montpellier", lat: 43.6117, lng: 3.8777, desc: "Là où tout a commencé ✨" },
-        { name: "Toulouse", lat: 43.6047, lng: 1.4442, desc: "La ville de notre second Date 🌹" },
-        { name: "Albi", lat: 43.9251, lng: 2.1486, desc: "Pour des fêtes inoubliables 🎉" },
-        { name: "Alès", lat: 44.1272, lng: 4.0850, desc: "Là où je me repose avec toi 🏡" },
-        { name: "Lyon", lat: 45.7640, lng: 4.8357, desc: "Pour des soirées endiablées 💃" },
-        { name: "Le Mas de la Barque", lat: 44.4093, lng: 3.9118, desc: "Pour ton bonhomme de neige HelloKitty ⛄" },
-        { name: "Madrid", lat: 40.4168, lng: -3.7038, desc: "Notre future destination ! 🇪🇸" }
-    ];
+        // COFFRE FORT & CARTE (BOUTONS)
+        // ==========================================
+        setTimeout(() => {
+            if(finalContent) {
+                // Bouton Carte
+                const mapBtn = document.createElement('div');
+                mapBtn.className = 'glass-panel interactive-panel';
+                mapBtn.style.marginTop = '15px';
+                mapBtn.innerHTML = `<div class="timer-label">🌍 Notre Monde</div><div class="timer-val" style="font-size: 1rem; font-weight: normal;">Voir la Carte</div>`;
+                mapBtn.onclick = openMap;
+                finalContent.appendChild(mapBtn);
 
-    let mapInitialized = false;
-    let map;
+                // Bouton Coffre
+                const vaultBtn = document.createElement('div');
+                vaultBtn.className = 'glass-panel interactive-panel vault-btn';
+                vaultBtn.style.marginTop = '10px';
+                vaultBtn.innerHTML = `<div class="timer-label">✨ Chose Promise...</div><div class="timer-val" style="font-size: 1rem;">Ouvrir le Secret</div>`;
+                vaultBtn.onclick = openSafe;
+                finalContent.appendChild(vaultBtn);
+            }
+        }, 1000);
 
-    // Ajout du bouton "Carte" dans le menu final
-    setTimeout(() => {
-        const finalContentDiv = document.getElementById('final-content');
-        if(finalContentDiv) {
-            const mapBtn = document.createElement('div');
-            mapBtn.className = 'glass-panel interactive-panel';
-            mapBtn.style.marginTop = '10px';
-            mapBtn.innerHTML = `
-                <div class="timer-label">🌍 Notre Monde</div>
-                <div class="timer-val" style="font-size: 1rem; font-weight: normal;">Voir la Carte</div>
-            `;
-            mapBtn.onclick = openMap;
-            // On l'insère avant le bouton "Zone Secrète" pour l'esthétique
-            const vaultBtn = finalContentDiv.querySelector('.vault-btn');
-            if(vaultBtn) finalContentDiv.insertBefore(mapBtn, vaultBtn);
-            else finalContentDiv.appendChild(mapBtn);
+        // --- LOGIQUE COFFRE ---
+        let currentCode = "";
+        const SECRET_CODE = "1707";
+        const safeModal = document.getElementById('safe-modal');
+        const screen = document.getElementById('safe-screen');
+        const interfaceDiv = document.getElementById('safe-interface');
+        const rewardDiv = document.getElementById('reward-ticket');
+
+        function openSafe() { safeModal.classList.add('open'); clearSafe(); }
+        function closeSafe() { 
+            safeModal.classList.remove('open');
+            setTimeout(() => { interfaceDiv.style.display = 'block'; rewardDiv.style.display = 'none'; clearSafe(); }, 500);
         }
-    }, 1200); // Un peu après le coffre fort
-
-    function openMap() {
-        document.getElementById('map-modal').classList.add('open');
-        
-        if (!mapInitialized) {
-            // Initialisation de Leaflet
-            // On centre grossièrement sur le sud de la France
-            map = L.map('map-container').setView([43.5, 3.0], 6);
-
-            // Fond de carte "Clair" (CartoDB Positron) qui rend super bien avec le filtre sépia
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19,
-                className: 'vintage-map-layer' // Notre classe CSS magique
-            }).addTo(map);
-
-            // Icône personnalisée (Cœur ou Épingle)
-            const heartIcon = L.divIcon({
-                className: 'custom-pin',
-                html: '📍', 
-                iconSize: [30, 42],
-                iconAnchor: [15, 42]
-            });
-
-            // Ajout des marqueurs
-            const markers = [];
-            locations.forEach(loc => {
-                const marker = L.marker([loc.lat, loc.lng], {icon: heartIcon}).addTo(map);
-                marker.bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
-                markers.push(marker);
-            });
-
-            // Ajuster la vue pour voir tous les points (incluant Madrid)
-            const group = new L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.2)); // pad(0.2) ajoute un peu de marge
-
-            mapInitialized = true;
+        function inputSafe(num) {
+            if(currentCode.length < 4) {
+                currentCode += num;
+                updateScreen();
+                if(currentCode.length === 4) checkCode();
+            }
         }
-    }
+        function clearSafe() { currentCode = ""; updateScreen(); screen.style.color = "#d6336c"; }
+        function updateScreen() { screen.innerText = currentCode.padEnd(4, '•'); }
+        function checkCode() {
+            if(currentCode === SECRET_CODE) {
+                screen.style.color = "#d4af37";
+                if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                setTimeout(() => { interfaceDiv.style.display = 'none'; rewardDiv.style.display = 'block'; }, 600);
+            } else {
+                screen.style.color = "#ff0000";
+                if(navigator.vibrate) navigator.vibrate(400);
+                setTimeout(clearSafe, 800);
+            }
+        }
 
-    function closeMap() {
-        document.getElementById('map-modal').classList.remove('open');
-    }
+        // --- LOGIQUE CARTE ---
+        const locations = [
+            { name: "Montpellier", lat: 43.6117, lng: 3.8777, desc: "Là où tout a commencé ✨" },
+            { name: "Toulouse", lat: 43.6047, lng: 1.4442, desc: "La ville de notre second Date 🌹" },
+            { name: "Albi", lat: 43.9251, lng: 2.1486, desc: "Pour des fêtes inoubliables 🎉" },
+            { name: "Alès", lat: 44.1272, lng: 4.0850, desc: "Là où je me repose avec toi 🏡" },
+            { name: "Lyon", lat: 45.7640, lng: 4.8357, desc: "Pour des soirées endiablées 💃" },
+            { name: "Le Mas de la Barque", lat: 44.4093, lng: 3.9118, desc: "Pour ton bonhomme de neige HelloKitty ⛄" },
+            { name: "Madrid", lat: 40.4168, lng: -3.7038, desc: "Notre future destination ! 🇪🇸" }
+        ];
+
+        let mapInitialized = false;
+        let map;
+
+        function openMap() {
+            document.getElementById('map-modal').classList.add('open');
+            
+            if (!mapInitialized) {
+                map = L.map('map-container').setView([43.5, 3.0], 6);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap &copy; CARTO',
+                    subdomains: 'abcd',
+                    maxZoom: 19,
+                    className: 'vintage-map-layer'
+                }).addTo(map);
+
+                const heartIcon = L.divIcon({
+                    className: 'custom-pin',
+                    html: '📍', 
+                    iconSize: [30, 42],
+                    iconAnchor: [15, 42]
+                });
+
+                const markers = [];
+                locations.forEach(loc => {
+                    const marker = L.marker([loc.lat, loc.lng], {icon: heartIcon}).addTo(map);
+                    marker.bindPopup(`<b>${loc.name}</b><br>${loc.desc}`);
+                    markers.push(marker);
+                });
+
+                const group = new L.featureGroup(markers);
+                setTimeout(() => {
+                    map.invalidateSize();
+                    map.fitBounds(group.getBounds().pad(0.2));
+                }, 200);
+
+                mapInitialized = true;
+            }
+        }
+
+        function closeMap() {
+            document.getElementById('map-modal').classList.remove('open');
+        }
+
     </script>
 </body>
 </html>
