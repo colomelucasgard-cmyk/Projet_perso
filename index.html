@@ -763,12 +763,6 @@
         }
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
 
-    <div id="map-modal">
-        <div class="map-title">Nos Souvenirs & Aventures</div>
-        <div id="map-container"></div>
-        <button onclick="closeMap()" style="margin-top:20px; padding:10px 25px; background:transparent; border:1px solid #d4af37; color:#d4af37; border-radius:20px; cursor:pointer; font-family:'Zen Maru Gothic';">Retour</button>
-    </div>
-
     </style>
 
     <audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
@@ -782,6 +776,25 @@
         </div>
     </div>
 
+    @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
+    </style> 
+    <audio id="bg-music" src="Gorillaz.mp3" loop crossOrigin="anonymous"></audio>
+
+    <div id="music-player-container">
+        <div class="vinyl-wrapper" id="vinyl-btn">
+            <div class="tonearm"></div>
+            <div class="vinyl-disc">
+                <div class="vinyl-label"><div class="vinyl-heart">❤️</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map-modal">
+        <div class="map-title">Nos Souvenirs & Aventures</div>
+        <div id="map-container"></div>
+        <button onclick="closeMap()" style="margin-top:20px; padding:10px 25px; background:transparent; border:1px solid #d4af37; color:#d4af37; border-radius:20px; cursor:pointer; font-family:'Zen Maru Gothic';">Retour</button>
+    </div>
+        
     <div id="safe-modal">
         <div id="safe-interface">
             <div class="safe-title">Un secret pour toi...</div>
